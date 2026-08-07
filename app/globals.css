@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/* =============================================================================
+ * Identidade visual — App de Gestão de Obra: EEE Novo Mundo
+ *
+ * Paleta oficial do projeto (CLAUDE.md): creme, vermelho escuro (vinho) e ouro.
+ * Os tokens ficam declarados aqui no :root e são expostos ao Tailwind v4 pelo
+ * bloco @theme abaixo — TODOS os agentes (gestão visual, concretagem/orçamento)
+ * devem usar essas classes, nunca cores hexadecimais soltas nos componentes.
+ * ========================================================================== */
+
+:root {
+  /* --- Fundos ------------------------------------------------------------ */
+  --creme: #f0ead8; /* fundo principal do app */
+  --creme-claro: #f7f3e6; /* faixas alternadas de tabela */
+  --superficie: #fffdf6; /* cartões e formulários sobre o creme */
+
+  /* --- Marca ------------------------------------------------------------- */
+  --vinho: #8b1a1a; /* cabeçalhos, primário */
+  --vinho-escuro: #6d1313; /* hover do primário */
+  --ouro: #e8a020; /* acento, bordas, ícones */
+  --ouro-escuro: #91620f; /* ouro legível como texto sobre creme */
+
+  /* --- Texto e traços ---------------------------------------------------- */
+  --tinta: #2b2320; /* corpo de texto (contraste ~13:1 no creme) */
+  --tinta-suave: #6a5c50; /* legendas e rótulos secundários */
+  --borda: #d8ccae; /* divisórias sobre creme */
+
+  /* --- Semântica de status de prazo / progresso -------------------------- */
+  --adiantado: #2f6b3a;
+  --no-prazo: #91620f;
+  --atrasado: #8b1a1a;
+  --neutro: #8d8271;
+}
+
+@theme inline {
+  --color-creme: var(--creme);
+  --color-creme-claro: var(--creme-claro);
+  --color-superficie: var(--superficie);
+
+  --color-vinho: var(--vinho);
+  --color-vinho-escuro: var(--vinho-escuro);
+  --color-ouro: var(--ouro);
+  --color-ouro-escuro: var(--ouro-escuro);
+
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-borda: var(--borda);
+
+  --color-adiantado: var(--adiantado);
+  --color-no-prazo: var(--no-prazo);
+  --color-atrasado: var(--atrasado);
+  --color-neutro: var(--neutro);
+
+  /* Tipografia: Playfair Display nos títulos, Crimson Pro no corpo. */
+  --font-titulo: var(--font-playfair-display), "Playfair Display", Georgia, serif;
+  --font-corpo: var(--font-crimson-pro), "Crimson Pro", Georgia, serif;
+}
+
+html {
+  color-scheme: light; /* o app é claro por definição — sem tema escuro */
+}
+
+body {
+  background-color: var(--creme);
+  color: var(--tinta);
+  font-family: var(--font-crimson-pro), Georgia, serif;
+  font-size: 1.0625rem; /* leitura confortável no celular, em campo */
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-playfair-display), Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Foco sempre visível — a equipe usa teclado no escritório e toque em campo. */
+:focus-visible {
+  outline: 2px solid var(--ouro-escuro);
+  outline-offset: 2px;
+}
+
+/* Números de indicador: tabular para não "dançar" ao atualizar. */
+.numeros-tabulares {
+  font-variant-numeric: tabular-nums;
+}

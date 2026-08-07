@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Planta esquemática da EEE Novo Mundo — GERADO por
+  components/gestao-visual/geometria-planta.ts (montarSvgEstatico).
+  NÃO EDITAR À MÃO: o teste tests/gestao-visual/planta-svg.test.ts compara este
+  arquivo com a saída daquela função e falha se houver divergência.
+  Cada id abaixo casa com elementos_visuais.svg_path_id (supabase/seed.sql).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 196" role="img"
+     aria-label="Planta esquemática da Estação Elevatória de Esgoto Novo Mundo">
+  <defs>
+    <pattern id="gv-textura-em-andamento" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+      <rect width="8" height="8" fill="#E8A020" />
+      <rect width="3" height="8" fill="#95660A" opacity="0.55" />
+    </pattern>
+    <pattern id="gv-textura-concluido" patternUnits="userSpaceOnUse" width="6" height="6">
+      <rect width="6" height="6" fill="#8B1A1A" />
+      <circle cx="1.5" cy="1.5" r="1.1" fill="#F0EAD8" opacity="0.7" />
+      <circle cx="4.5" cy="4.5" r="1.1" fill="#F0EAD8" opacity="0.7" />
+    </pattern>
+  </defs>
+  <g id="estruturas">
+    <path id="pavimentacao" d="M30.2,81 L322,81 L322,11 L485.4,11 L538.1,68.4 L500.7,175 L16.9,175 Z" fill="#CFC7B4" stroke="#8A8271" stroke-width="1.2">
+      <title>Pavimentação</title>
+    </path>
+    <path id="muro-perimetral" d="M25,75 L316,75 L316,5 L488,5 L545,67 L505,181 L10,181 Z M30.2,81 L322,81 L322,11 L485.4,11 L538.1,68.4 L500.7,175 L16.9,175 Z" fill-rule="evenodd" fill="#CFC7B4" stroke="#8A8271" stroke-width="1.2">
+      <title>Muro perimetral</title>
+    </path>
+    <path id="poco-umido" d="M180,105 L272,105 L272,160 L180,160 Z" fill="#CFC7B4" stroke="#8A8271" stroke-width="1.2">
+      <title>Poço úmido</title>
+    </path>
+    <path id="camara-grades" d="M111,105 L180,105 L180,160 L111,160 Z" fill="#CFC7B4" stroke="#8A8271" stroke-width="1.2">
+      <title>Câmara de grades</title>
+    </path>
+    <path id="casa-comando" d="M350,103 L426,103 A12,12 0 0 1 438,115 L438,150 A12,12 0 0 1 426,162 L350,162 Z" fill="#CFC7B4" stroke="#8A8271" stroke-width="1.2">
+      <title>Casa de comando</title>
+    </path>
+    <path id="caixa-valvulas" d="M272,105 L327,105 L327,160 L272,160 Z" fill="#CFC7B4" stroke="#8A8271" stroke-width="1.2">
+      <title>Caixa de válvulas</title>
+    </path>
+    <path id="caixa-comporta" d="M85,117 L109,117 L109,147 L85,147 Z" fill="#CFC7B4" stroke="#8A8271" stroke-width="1.2">
+      <title>Caixa de comporta</title>
+    </path>
+    <path id="caixa-tanque-hidropneumatico" d="M421,17 L453,17 L453,49 L421,49 Z" fill="#CFC7B4" stroke="#8A8271" stroke-width="1.2">
+      <title>Caixa do tanque hidropneumático</title>
+    </path>
+    <path id="caixa-medidor-vazao" d="M376,31 L402,31 L402,57 L376,57 Z" fill="#CFC7B4" stroke="#8A8271" stroke-width="1.2">
+      <title>Caixa do medidor de vazão</title>
+    </path>
+  </g>
+  <g id="contexto">
+    <path d="M34,132 L85,132" fill="none" stroke="#6E6455" stroke-width="1.6" stroke-dasharray="6 4" stroke-linecap="round" />
+    <path d="M321,110 L368,44 L376,44 M402,44 L437,44 L437,49" fill="none" stroke="#6E6455" stroke-width="1.6" stroke-linecap="round" />
+    <path d="M17.5,146 L21.5,116" fill="none" stroke="#2B2320" stroke-width="4" stroke-linecap="round" />
+    <path d="M527,109 L517,138" fill="none" stroke="#2B2320" stroke-width="4" stroke-linecap="round" />
+    <path d="M24,44 L24,26 M24,26 L20,33 M24,26 L28,33" fill="none" stroke="#6E6455" stroke-width="1.4" stroke-linecap="round" />
+  </g>
+  <g id="rotulos">
+    <text x="150" y="92" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">Pavimentação</text>
+    <text x="150" y="62" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">Muro perimetral</text>
+    <text x="226" y="128" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">Poço úmido</text>
+    <text x="145" y="124" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">Câmara de</text>
+    <text x="145" y="132" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">grades</text>
+    <text x="392" y="128" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">Casa de comando</text>
+    <text x="299" y="124" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">Caixa de</text>
+    <text x="299" y="132" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">válvulas</text>
+    <text x="81" y="140" text-anchor="end" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">Caixa de</text>
+    <text x="81" y="148" text-anchor="end" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">comporta</text>
+    <text x="437" y="59" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">Caixa do tanque</text>
+    <text x="437" y="67" text-anchor="middle" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">hidropneumático</text>
+    <text x="372" y="40" text-anchor="end" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">Caixa do medidor</text>
+    <text x="372" y="48" text-anchor="end" font-size="7" fill="#2B2320" stroke="#F0EAD8" stroke-width="1.6" paint-order="stroke" font-family="Georgia, serif">de vazão</text>
+    <text x="34" y="128" text-anchor="start" font-size="5" fill="#6E6455" font-family="Georgia, serif">Rede coletora DN 300 (PV-29)</text>
+    <text x="26" y="112" text-anchor="start" font-size="5" fill="#6E6455" font-family="Georgia, serif">Portão</text>
+    <text x="512" y="106" text-anchor="end" font-size="5" fill="#6E6455" font-family="Georgia, serif">Portão</text>
+    <text x="24" y="22" text-anchor="middle" font-size="9" fill="#6E6455" font-family="Georgia, serif">N</text>
+  </g>
+</svg>

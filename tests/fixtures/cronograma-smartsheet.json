@@ -1,0 +1,470 @@
+[
+  {
+    "linhaPlanilha": 2,
+    "celulas": {
+      "nivel": 0,
+      "predecessores": null,
+      "percentualConcluida": 0.2,
+      "atividade": "MARCOS CONDICIONANTES PARA INÍCIO DA EXECUÇÃO",
+      "duracao": "303d",
+      "iniciar": "2025-08-04T00:00:00.000Z",
+      "terminar": "2026-11-04T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 48,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 3,
+    "celulas": {
+      "nivel": 1,
+      "predecessores": null,
+      "percentualConcluida": 0,
+      "atividade": "Engenharia de Produto",
+      "duracao": "252d",
+      "iniciar": "2025-08-04T00:00:00.000Z",
+      "terminar": "2026-08-21T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 98.9999999653,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 4,
+    "celulas": {
+      "nivel": 2,
+      "predecessores": null,
+      "percentualConcluida": 1,
+      "atividade": "Previsão para entrega do projeto civil",
+      "duracao": "0",
+      "iniciar": null,
+      "terminar": null,
+      "caminhoCritico": null,
+      "indicadorPrazo": "Sim",
+      "folga": null,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 5,
+    "celulas": {
+      "nivel": 1,
+      "predecessores": null,
+      "percentualConcluida": 0.47,
+      "atividade": "Suprimentos EC",
+      "duracao": "185d",
+      "iniciar": "2026-01-28T00:00:00.000Z",
+      "terminar": "2026-11-04T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 48,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 6,
+    "celulas": {
+      "nivel": 2,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Compras",
+      "duracao": "62d",
+      "iniciar": "2026-08-05T00:00:00.000Z",
+      "terminar": "2026-11-04T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 48,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 7,
+    "celulas": {
+      "nivel": 3,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Compra do aço",
+      "duracao": "0",
+      "iniciar": "2026-08-07T00:00:00.000Z",
+      "terminar": "2026-08-07T00:00:00.000Z",
+      "caminhoCritico": true,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": "66",
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 8,
+    "celulas": {
+      "nivel": 0,
+      "predecessores": null,
+      "percentualConcluida": 0.06,
+      "atividade": "E.E.E. - NOVO MUNDO",
+      "duracao": "164d",
+      "iniciar": "2026-05-15T00:00:00.000Z",
+      "terminar": "2027-01-26T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 9,
+    "celulas": {
+      "nivel": 1,
+      "predecessores": null,
+      "percentualConcluida": 1,
+      "atividade": "SERVIÇOS PRELIMINARES",
+      "duracao": "2d",
+      "iniciar": "2026-07-27T00:00:00.000Z",
+      "terminar": "2026-07-28T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": "Sim",
+      "folga": 116,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 10,
+    "celulas": {
+      "nivel": 2,
+      "predecessores": "56",
+      "percentualConcluida": 1,
+      "atividade": "Marcação de obra",
+      "duracao": "1d",
+      "iniciar": "2026-05-15T00:00:00.000Z",
+      "terminar": "2026-07-27T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": "Sim",
+      "folga": 1.0000001042,
+      "haPulmao": null,
+      "sucessoras": "36, 44",
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 11,
+    "celulas": {
+      "nivel": 2,
+      "predecessores": "35",
+      "percentualConcluida": 0.42,
+      "atividade": "Execução dos gabaritos de Locação",
+      "duracao": "1d",
+      "iniciar": "2026-07-28T00:00:00.000Z",
+      "terminar": "2026-07-28T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": "Sim",
+      "folga": 1.0000001042,
+      "haPulmao": null,
+      "sucessoras": "66",
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 12,
+    "celulas": {
+      "nivel": 1,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "CIVIL",
+      "duracao": "163d",
+      "iniciar": "2026-07-29T00:00:00.000Z",
+      "terminar": "2027-01-20T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 13,
+    "celulas": {
+      "nivel": 2,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Elevatória de esgoto bruto",
+      "duracao": "55,5d",
+      "iniciar": "2026-07-29T00:00:00.000Z",
+      "terminar": "2026-10-10T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 14,
+    "celulas": {
+      "nivel": 3,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Fosso de sucção",
+      "duracao": "30,5d",
+      "iniciar": "2026-07-29T00:00:00.000Z",
+      "terminar": "2026-09-10T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 15,
+    "celulas": {
+      "nivel": 4,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Laje de fundo",
+      "duracao": "4d",
+      "iniciar": "2026-07-29T00:00:00.000Z",
+      "terminar": "2026-08-03T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 16,
+    "celulas": {
+      "nivel": 5,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Ferragem",
+      "duracao": "2d",
+      "iniciar": "2026-07-29T00:00:00.000Z",
+      "terminar": "2026-07-30T00:00:00.000Z",
+      "caminhoCritico": true,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 17,
+    "celulas": {
+      "nivel": 5,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Concretagem",
+      "duracao": "0,5d",
+      "iniciar": "2026-07-31T00:00:00.000Z",
+      "terminar": "2026-07-31T00:00:00.000Z",
+      "caminhoCritico": true,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 18,
+    "celulas": {
+      "nivel": 3,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Caixa de comporta",
+      "duracao": "12d",
+      "iniciar": "2026-09-11T00:00:00.000Z",
+      "terminar": "2026-09-28T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 19,
+    "celulas": {
+      "nivel": 4,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Laje de fundo",
+      "duracao": "3d",
+      "iniciar": "2026-09-11T00:00:00.000Z",
+      "terminar": "2026-09-15T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 20,
+    "celulas": {
+      "nivel": 5,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Concretagem",
+      "duracao": "0,5d",
+      "iniciar": "2026-09-15T00:00:00.000Z",
+      "terminar": "2026-09-15T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 21,
+    "celulas": {
+      "nivel": 2,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Muro perimetral (~150m)",
+      "duracao": "32d",
+      "iniciar": "2026-11-02T00:00:00.000Z",
+      "terminar": "2026-12-15T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 22,
+    "celulas": {
+      "nivel": 3,
+      "predecessores": "345",
+      "percentualConcluida": null,
+      "atividade": "Pintura",
+      "duracao": null,
+      "iniciar": null,
+      "terminar": null,
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": null,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 23,
+    "celulas": {
+      "nivel": 1,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "ELÉTRICA",
+      "duracao": "20d",
+      "iniciar": "2026-12-16T00:00:00.000Z",
+      "terminar": "2027-01-26T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 24,
+    "celulas": {
+      "nivel": 2,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Instalação de medidor de vazão do macromedidor",
+      "duracao": "1d",
+      "iniciar": "2026-12-16T00:00:00.000Z",
+      "terminar": "2027-01-26T00:00:00.000Z",
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": 0,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 25,
+    "celulas": {
+      "nivel": 0,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": null,
+      "duracao": null,
+      "iniciar": null,
+      "terminar": null,
+      "caminhoCritico": null,
+      "indicadorPrazo": null,
+      "folga": null,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 26,
+    "celulas": {
+      "nivel": 0,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "OUTRO RAMO CORPORATIVO FORA DE ESCOPO",
+      "duracao": "10d",
+      "iniciar": "2027-02-01T00:00:00.000Z",
+      "terminar": "2027-02-15T00:00:00.000Z",
+      "caminhoCritico": true,
+      "indicadorPrazo": null,
+      "folga": null,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  },
+  {
+    "linhaPlanilha": 27,
+    "celulas": {
+      "nivel": 1,
+      "predecessores": null,
+      "percentualConcluida": null,
+      "atividade": "Etapa qualquer de outro ramo",
+      "duracao": "5d",
+      "iniciar": "2027-02-01T00:00:00.000Z",
+      "terminar": "2027-02-08T00:00:00.000Z",
+      "caminhoCritico": true,
+      "indicadorPrazo": null,
+      "folga": null,
+      "haPulmao": null,
+      "sucessoras": null,
+      "recurso": null
+    }
+  }
+]
