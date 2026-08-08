@@ -112,3 +112,23 @@ test.describe('orçamento do terceirizado', () => {
     await expect(page.getByText(/mão de obra/i)).toBeVisible()
   })
 })
+
+test.describe('análise IA', () => {
+  test('a chave da Anthropic nunca chega ao browser', async ({ page }) => {
+    const dados = exigirCredencial('GESTOR')
+    await entrar(page, dados)
+    await page.goto('/analise')
+
+    // Nenhum bundle servido ao cliente pode conter a chave nem o nome da var.
+    const conteudo = await page.content()
+    expect(conteudo).not.toMatch(/sk-ant-/)
+    expect(conteudo).not.toMatch(/ANTHROPIC_API_KEY/)
+  })
+
+  test('campo não acessa a análise consolidada', async ({ page }) => {
+    const dados = exigirCredencial('CAMPO')
+    await entrar(page, dados)
+    await page.goto('/analise')
+    await expect(page.getByText(/sem acesso/i)).toBeVisible()
+  })
+})

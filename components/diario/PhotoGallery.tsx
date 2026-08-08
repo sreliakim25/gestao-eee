@@ -45,10 +45,11 @@ export function PhotoGallery({
   // Gera as signed URLs das fotos já cadastradas.
   useEffect(() => {
     let ativo = true;
-    if (fotos.length === 0) {
-      setUrls({});
-      return;
-    }
+    // Sem fotos não há URL a assinar. Não limpamos o estado aqui de propósito:
+    // as chaves do mapa são `storage_path`, então entradas remanescentes nunca
+    // são consultadas — e um setState síncrono no efeito dispara render em
+    // cascata sem necessidade.
+    if (fotos.length === 0) return;
 
     (async () => {
       try {

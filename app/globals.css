@@ -88,3 +88,46 @@ h4 {
 .numeros-tabulares {
   font-variant-numeric: tabular-nums;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Impressão do RDO (/diario/impressao) — o PDF sai daqui.                    */
+/* -------------------------------------------------------------------------- */
+
+@page {
+  size: A4 portrait;
+  margin: 14mm 12mm;
+}
+
+@media print {
+  /* Fundo creme economiza tinta e some no PDF; texto vai a preto pleno. */
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* O shell do app (navegação, rodapé) não entra no relatório. */
+  header[data-app-shell],
+  nav[data-app-shell],
+  footer[data-app-shell],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .rdo-impressao {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* Bloco de assinatura e seções curtas não podem ser cortados entre páginas. */
+  .break-inside-avoid,
+  .rdo-impressao footer,
+  .rdo-impressao table {
+    break-inside: avoid;
+  }
+
+  /* Cabeçalho de tabela se repete quando o efetivo passa de uma página. */
+  thead {
+    display: table-header-group;
+  }
+}

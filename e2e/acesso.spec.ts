@@ -17,6 +17,8 @@ const ROTAS_PROTEGIDAS = [
   '/diario',
   '/concretagem',
   '/orcamento',
+  '/analise',
+  '/diario/impressao',
 ]
 
 test.describe('acesso', () => {

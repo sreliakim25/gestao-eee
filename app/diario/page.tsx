@@ -3,6 +3,7 @@
  * A data fica na querystring (`?data=YYYY-MM-DD`); sem parâmetro, abre hoje.
  */
 
+import Link from 'next/link';
 import { DailyLogForm } from '@/components/diario/DailyLogForm';
 import { DateNavigator } from '@/components/diario/DateNavigator';
 import { PhotoGallery } from '@/components/diario/PhotoGallery';
@@ -56,6 +57,17 @@ export default async function DiarioPage({ searchParams }: DiarioPageProps) {
       ) : null}
 
       <DateNavigator data={data} hoje={hoje} datasComRegistro={diario.datasComRegistro} />
+
+      {diario.registro ? (
+        <p className="mb-4 text-sm">
+          <Link
+            href={`/diario/impressao?data=${data}`}
+            className="text-ouro-escuro underline underline-offset-2"
+          >
+            Exportar este RDO em PDF
+          </Link>
+        </p>
+      ) : null}
 
       {!projeto ? (
         <EmptyState

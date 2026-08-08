@@ -23,8 +23,12 @@ Next.js 16 (App Router) · TypeScript · Tailwind v4 · Recharts · Supabase
 | `/lancamento` | Avanço físico semanal |
 | `/gestao-visual` | Planta esquemática em SVG, colorida por % e clicável |
 | `/diario` | Diário de obra (RDO) com fotos |
+| `/diario/impressao` | RDO em A4, pronto para "Salvar como PDF" |
 | `/concretagem` | Etapas, checklist, alerta de pedido mínimo de 5 m³ |
 | `/orcamento` | Orçado x medido do terceirizado |
+| `/analise` | Análise IA: situação, riscos e recomendações (opcional) |
+
+Orçamento e Análise IA são visíveis apenas para os perfis `gestor` e `fiscal`.
 
 ## Como subir do zero
 
@@ -63,11 +67,18 @@ em silêncio**; remover exige `--prune` explícito.
 npx tsx scripts/import-orcamento.ts --dry-run
 ```
 
-### 4. Rodar
+### 4. Análise IA (opcional)
+
+Defina `ANTHROPIC_API_KEY` no servidor — **nunca** com prefixo `NEXT_PUBLIC_`.
+Sem a variável, a rota `/analise` mostra um aviso e não chama a API. A análise
+interpreta os indicadores já calculados em `lib/calculos/`; ela não recalcula
+nada, e o número oficial continua sendo o do Painel.
+
+### 5. Rodar
 
 ```bash
 npm run dev
-npm test          # 330 testes unitários e de componente
+npm test          # 341 testes unitários e de componente
 npm run test:e2e  # ver pré-requisitos em e2e/README.md
 ```
 

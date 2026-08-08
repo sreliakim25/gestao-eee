@@ -47,7 +47,7 @@ export function AppShell({ perfil, emailUsuario, children }: AppShellProps) {
         Ir para o conteúdo
       </a>
 
-      <header className="bg-vinho text-creme">
+      <header data-app-shell className="bg-vinho text-creme">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-3 pt-3 pb-2 sm:px-4">
           <div className="min-w-0">
             <p className="font-titulo text-lg leading-tight sm:text-xl">E.E.E. Novo Mundo</p>
@@ -76,7 +76,7 @@ export function AppShell({ perfil, emailUsuario, children }: AppShellProps) {
         {children}
       </main>
 
-      <footer className="border-t border-borda px-3 py-4 text-center text-sm text-tinta-suave">
+      <footer data-app-shell className="border-t border-borda px-3 py-4 text-center text-sm text-tinta-suave">
         Escopo: tudo dentro do muro perimetral da elevatória. Cronograma sincronizado do
         Smartsheet.
       </footer>

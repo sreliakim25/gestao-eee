@@ -23,8 +23,8 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('navigation (regras de visibilidade)', () => {
-  it('expõe os 8 módulos do app', () => {
-    expect(APP_MODULES).toHaveLength(8);
+  it('expõe os 9 módulos do app', () => {
+    expect(APP_MODULES).toHaveLength(9);
     expect(APP_MODULES.map((modulo) => modulo.href)).toEqual([
       '/',
       '/cronograma',
@@ -34,13 +34,16 @@ describe('navigation (regras de visibilidade)', () => {
       '/diario',
       '/concretagem',
       '/orcamento',
+      '/analise',
     ]);
   });
 
-  it('gestor e fiscal enxergam tudo; campo não enxerga Orçamento', () => {
-    expect(visibleModules('gestor')).toHaveLength(8);
-    expect(visibleModules('fiscal')).toHaveLength(8);
-    expect(visibleModules('campo').map((m) => m.href)).not.toContain('/orcamento');
+  it('gestor e fiscal enxergam tudo; campo não enxerga Orçamento nem Análise IA', () => {
+    expect(visibleModules('gestor')).toHaveLength(9);
+    expect(visibleModules('fiscal')).toHaveLength(9);
+    const doCampo = visibleModules('campo').map((m) => m.href);
+    expect(doCampo).not.toContain('/orcamento');
+    expect(doCampo).not.toContain('/analise');
   });
 
   it('usuário sem perfil não enxerga módulo nenhum', () => {
@@ -66,7 +69,8 @@ describe('<MainNav /> por perfil', () => {
   it('gestor vê o link de Orçamento', () => {
     render(<MainNav perfil="gestor" />);
     expect(screen.getByRole('link', { name: 'Orçamento' })).toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(8);
+    expect(screen.getByRole('link', { name: 'Análise IA' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link')).toHaveLength(9);
   });
 
   it('campo não vê o link de Orçamento', () => {

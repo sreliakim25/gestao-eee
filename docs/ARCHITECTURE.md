@@ -467,3 +467,191 @@ carrega `" > "` e que o último segmento do `caminho_wbs` é sempre o `nome`.
 A fixture pequena cobre **comportamento**; só o arquivo real cobre **escala** — e
 foi exatamente a escala que passou despercebida na primeira versão. Se o `.xlsx`
 sumir, o teste falha em vez de passar em silêncio.
+
+---
+
+## 4. Shell e módulos de UI (`app/`, `components/`) — dono: `ui-modulos`
+
+### 4.1 Tema
+
+As cores da identidade visual são **custom properties no `:root`** de
+`app/globals.css`, expostas como tokens do Tailwind v4 via `@theme inline`.
+Nenhum componente escreve hexadecimal solto — usa `bg-vinho`, `text-tinta-suave`,
+`border-borda` etc. Além das três cores da marca (creme `#F0EAD8`, vinho
+`#8B1A1A`, ouro `#E8A020`), há derivadas necessárias por **contraste**:
+`--ouro-escuro` (#91620F) existe porque o ouro puro não é legível como texto
+sobre creme, e `--vinho-escuro` para hover.
+
+Tipografia: Playfair Display nos títulos, Crimson Pro no corpo, ambas via
+`next/font/google` (self-hosted no build, sem requisição a terceiros em runtime).
+
+### 4.2 Navegação
+
+`components/layout/navigation.ts` é a **fonte única** dos módulos: rota nova
+entra ali, não em `<Link>` espalhado. Cada módulo declara `allowedProfiles`
+opcional. Orçamento e Análise IA são restritos a `gestor`/`fiscal`.
+
+> Esconder um item de menu é **conveniência de UI, não segurança**. A barreira
+> real é a RLS do Postgres (seção 1). Um usuário `campo` que digitar `/orcamento`
+> na barra de endereços recebe a página, e são as políticas do banco que fazem
+> as consultas voltarem vazias.
+
+### 4.3 Sessão e proteção de rotas
+
+`middleware.ts` na raiz chama `atualizarSessao()` de `lib/supabase/middleware.ts`
+para renovar o cookie de sessão a cada request. As páginas chamam
+`exigirSessao()`, que redireciona ao `/login` quando não há usuário. Quando o
+Supabase está indisponível, `exigirSessao()` trata como **não autenticado** em
+vez de estourar erro — a tela cai no login em vez de mostrar stack trace.
+
+### 4.4 Cronograma com 310 atividades
+
+A tabela pagina no cliente e o Gantt (`SimpleGantt`) desenha barras via
+`ganttGeometry.ts` — geometria pura e testável, sem motor de CPM próprio: datas,
+folga e criticidade vêm prontas do Smartsheet. Os filtros
+(`components/filters/scheduleFilters.ts`) são funções puras combináveis: semana
+atual, caminho crítico, frente e elemento.
+
+**Pendência conhecida:** a UI exibe `atividades.nome` (nome curto). Atividades
+homônimas em ramos diferentes do WBS ficam visualmente iguais na lista — o que
+as distingue é `caminho_wbs` (seção 3). Hoje ele vai no `title`; se a lista
+crescer, vale exibir o ramo pai como subtítulo.
+
+---
+
+## 5. Gestão Visual (`components/gestao-visual/`, `public/svg/`) — dono: `gestao-visual`
+
+### 5.1 Contrato de renderização (preparado para IFC)
+
+O elemento visual é uma **entidade do modelo de dados**, não um desenho.
+`components/gestao-visual/tipos.ts` define `RenderizadorPlanta`: um componente
+que recebe `ElementoRenderizavel[]` (nome, percentual e faixa **já resolvidos**)
+e devolve pixels. Trocar o SVG por um viewer IFC custa um `import`:
+
+```tsx
+<GestaoVisual elementos={...} atividades={...} />                        // SVG (padrão)
+<GestaoVisual elementos={...} atividades={...} renderizador={ViewerIfc} />
+```
+
+O renderizador nunca conhece Supabase, nunca vê `atividades` e nunca calcula
+percentual. Cada um escolhe a chave de geometria que usa: o SVG casa por
+`svg_path_id`, o futuro IFC por `ifc_global_id` — **as duas colunas já existem**,
+então a troca não exige migration.
+
+### 5.2 Sincronia entre o banco e o desenho
+
+`elementos_visuais.svg_path_id` e o `id` do nó no SVG são a mesma chave mantida
+em dois arquivos, por dois donos. Renomear um lado e esquecer o outro faz o
+elemento **deixar de ser pintado, sem erro e sem log**.
+
+`tests/gestao-visual/sincronia-seed-svg.test.ts` lê o `supabase/seed.sql` real e
+falha se os conjuntos divergirem em qualquer direção — elemento no banco sem
+geometria, ou forma desenhada sem elemento correspondente. Esse teste também
+barra formas cujo id remeta a emissário, travessia ou coletora externa,
+travando a regra de escopo no código em vez de só na documentação.
+
+### 5.3 Acessibilidade e daltonismo
+
+Cada elemento existe **duas vezes**, de propósito: como forma focável no desenho
+(`role="button"`, `tabIndex`, `aria-label` com nome + percentual + faixa +
+nº de atividades) e como linha em uma lista textual. A lista é o caminho de
+leitura para leitor de tela e a tabela de conferência para quem prefere números.
+Ambas abrem o mesmo painel de detalhe.
+
+A faixa de progresso **nunca é comunicada só por matiz**: cor + padrão de traço +
+rótulo textual + percentual numérico.
+
+---
+
+## 6. Concretagem e Orçamento (`lib/concretagem/`, `app/concretagem/`, `app/orcamento/`) — dono: `concretagem-financeiro`
+
+### 6.1 Mínimo de 5 m³ e combinação de sobras
+
+`VOLUME_MINIMO_CONCRETO_M3 = 5` é declarado **uma vez** em `types/database.ts` e
+reutilizado em `lib/concretagem/`, na UI e na constraint SQL — a regra não pode
+divergir entre camadas.
+
+Pedir abaixo do mínimo não é proibido, é **condicionado**:
+`sugerirCombinacoesDeSobra()` procura outras etapas/frentes cujo volume, somado,
+alcance os 5 m³; só depois de registrar a combinação (`combinado_com_sobra`) o
+pedido é aceito. O banco espelha isso: `volume_m3 >= 5 OR combinado_com_sobra`.
+
+### 6.2 Concreto é compra direta — nunca soma na mão de obra
+
+`orcamento_itens.eh_compra_direta` separa o concreto (compra da contratada,
+faturada pela contratante) do contrato de mão de obra do terceirizado. A view
+`orcamento_resumo_categoria` já devolve as colunas segregadas, e a tela exibe os
+dois valores **rotulados separadamente** — não existe, em nenhuma camada, um
+total único que some os dois.
+
+### 6.3 Máquina de estados do pedido
+
+`planejado → pedido → confirmado → concretado`, com `TRANSICOES_VALIDAS`
+explícito em `lib/concretagem/status.ts`. `concretado` exige `data_realizada` —
+regra validada no cliente antes de bater no banco, e novamente pela constraint,
+porque a validação de UI é conveniência e a do banco é a garantia.
+
+### 6.4 Checklist técnico
+
+`lib/concretagem/checklist.ts` traduz o `Plano_Execucao_Concretagem_EEE.docx` em
+itens **tipados**, não string solta: slump 60 ± 10 mm, cobrimento ≥ 5 cm (CAA
+IV), cura mínima 7 dias, desforma só após 14 dias, aditivo cristalizante e
+juntas tipo pente. Cada item tem `obrigatorio`, e o estado vai para
+`concretagem_pedidos.checklist_json`.
+
+---
+
+## 7. Análise IA (`lib/ia/`, `app/api/analise-ia/`, `app/analise/`)
+
+Módulo **opcional** da Fase 7: gera um resumo do estado da obra (situação,
+riscos, recomendações) com a API da Anthropic.
+
+### 7.1 A IA interpreta, não calcula
+
+O dossiê enviado ao modelo é montado por `montarDossie()` a partir de
+`IndicadoresPainel` — os mesmos números que o Painel exibe, produzidos por
+`lib/calculos/`. **O modelo não recalcula nada.** Se recalculasse, o texto
+poderia contradizer o Painel sem nenhum erro de compilação, e o número do Painel
+é o oficial. `tests/ia/analise-obra.test.ts` compara o dossiê contra a saída do
+motor justamente para travar isso.
+
+A instrução de sistema carrega as regras de negócio (5 m³, compra direta) e o
+escopo geográfico (nada de emissário ou rede coletora externa), e proíbe
+explicitamente inventar números — se um dado falta, o modelo deve dizer que
+falta em vez de estimar.
+
+### 7.2 Superfície de segurança
+
+- A chave vive apenas em `ANTHROPIC_API_KEY`, lida no route handler. **Nunca**
+  com prefixo `NEXT_PUBLIC_`.
+- O endpoint **não aceita dados da obra vindos do cliente**. Ele carrega os
+  indicadores do Supabase sob a sessão do usuário. Se o dossiê viesse no corpo
+  do request, qualquer um poderia forjar números e receber de volta uma análise
+  com aparência oficial.
+- Autenticação obrigatória (401 sem sessão) e restrito a `gestor`/`fiscal`.
+- Rate limiting de 30 s por usuário. É **em memória do processo** — em várias
+  instâncias na Vercel cada uma tem seu próprio contador. Serve contra clique
+  repetido, não contra abuso deliberado; se isso virar requisito, o limitador
+  precisa ir para o Postgres ou um Redis.
+- Erros da API nunca são repassados crus ao cliente (podem carregar detalhe da
+  conta); vão para o log do servidor e o usuário recebe mensagem genérica.
+- O texto gerado é renderizado como **texto**, nunca via `innerHTML`.
+- `stop_reason: "refusal"` é tratado antes de ler o conteúdo.
+
+### 7.3 Exportação do RDO em PDF
+
+`/diario/impressao?data=YYYY-MM-DD` é uma página A4 com regras `@page`; o PDF sai
+pelo "Salvar como PDF" do navegador — inclusive no celular, que é onde a equipe
+de campo está.
+
+Decisão consciente contra gerar o PDF no servidor: `puppeteer` (Chrome headless)
+não cabe bem numa function da Vercel, e `@react-pdf` obrigaria a manter um
+segundo conjunto de componentes, que desincroniza do RDO de tela na primeira
+mudança. **Contrapartida:** depende do diálogo de impressão do usuário, então não
+dá para gerar RDO em lote nem anexar automaticamente a um e-mail. Se isso virar
+requisito, o caminho é um job separado com Chrome headless — e esta página
+continua sendo o template, sem retrabalho.
+
+As fotos **não** são embutidas: ficam num bucket privado e a URL assinada
+expiraria, saindo quebrada no PDF. O relatório lista as legendas e aponta para
+o app.

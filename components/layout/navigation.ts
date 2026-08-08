@@ -20,7 +20,7 @@ export interface AppModule {
   allowedProfiles?: readonly PerfilUsuarioEnum[];
 }
 
-/** Os 8 módulos, na ordem em que a obra os usa. */
+/** Os 9 módulos, na ordem em que a obra os usa. */
 export const APP_MODULES: readonly AppModule[] = [
   {
     href: '/',
@@ -62,6 +62,13 @@ export const APP_MODULES: readonly AppModule[] = [
     label: 'Orçamento',
     description: 'Contrato do terceirizado: orçado x medido',
     // Dado financeiro do contrato não é necessário para a equipe de campo.
+    allowedProfiles: ['gestor', 'fiscal'],
+  },
+  {
+    href: '/analise',
+    label: 'Análise IA',
+    description: 'Leitura automática dos indicadores: situação, riscos e recomendações',
+    // Consolida o quadro inteiro da obra, incluindo risco de prazo.
     allowedProfiles: ['gestor', 'fiscal'],
   },
 ];
