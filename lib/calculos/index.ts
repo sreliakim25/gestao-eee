@@ -80,6 +80,14 @@ export {
 } from './curva-s';
 
 export {
+  LIMIAR_DIVERGENCIA_PP,
+  percentualOficial,
+  divergenciaRelevante,
+  type FontePercentual,
+  type PercentualOficial,
+} from './oficial';
+
+export {
   montarIndicadoresPainel,
   type EntradaPainel,
   type IndicadoresPainel,

@@ -16,6 +16,7 @@ import {
   type ResumoAtividades,
 } from './evolucao';
 import { faixaProgresso } from './progresso';
+import { percentualOficial, type PercentualOficial } from './oficial';
 import { statusPrazo, type AvaliacaoPrazo } from './prazo';
 import type {
   AgregadoPercentual,
@@ -33,10 +34,28 @@ export interface EntradaPainel extends OpcoesPonderacao {
   dataFimPlanejada: DataEntrada | null | undefined;
   filtros?: FiltrosAtividade;
   toleranciaPontosPercentuais?: number;
+  /**
+   * Rollup do Smartsheet para o projeto (`projetos.percentual_smartsheet`).
+   * Quando presente, é ELE que vira o percentual oficial — ver `oficial.ts`.
+   */
+  rollupSmartsheetGeral?: number | null;
+  /**
+   * Rollup por grupo macro (`grupos_macro.percentual_smartsheet`), indexado
+   * pelo id do grupo. Chave ausente ou valor nulo = sem apontamento.
+   */
+  rollupSmartsheetPorGrupo?: Readonly<Record<string, number | null>>;
 }
 
 export interface IndicadoresPainel {
+  /**
+   * Percentual exibido no topo. É o rollup do Smartsheet quando importado; se
+   * não, o calculado. Confira `evolucaoGeral.fonte` antes de rotular a tela.
+   */
   percentualEvolucaoGeral: number;
+  /** O oficial com procedência e divergência — a UI precisa disso para avisar. */
+  evolucaoGeral: PercentualOficial;
+  /** Oficial por grupo macro, mesma regra, indexado pelo id do grupo. */
+  evolucaoPorGrupoMacro: Record<string, PercentualOficial>;
   faixaProgressoGeral: FaixaProgresso;
   prazo: AvaliacaoPrazo;
   semanasRestantes: number;
@@ -57,10 +76,21 @@ export function montarIndicadoresPainel(entrada: EntradaPainel): IndicadoresPain
   } = entrada;
 
   const geral = percentualEvolucaoGeral(atividades, { ...ponderacao, filtros });
+  const oficialGeral = percentualOficial(entrada.rollupSmartsheetGeral, geral);
+
+  const porGrupo = percentualPorGrupoMacro(atividades, { ...ponderacao, filtros });
+  const rollupGrupos = entrada.rollupSmartsheetPorGrupo ?? {};
+  const oficialPorGrupo: Record<string, PercentualOficial> = {};
+  for (const [grupoId, agregado] of Object.entries(porGrupo)) {
+    oficialPorGrupo[grupoId] = percentualOficial(rollupGrupos[grupoId], agregado.percentual);
+  }
 
   return {
-    percentualEvolucaoGeral: geral,
-    faixaProgressoGeral: faixaProgresso(geral),
+    // O número de topo é o oficial, não o calculado.
+    percentualEvolucaoGeral: oficialGeral.valor,
+    evolucaoGeral: oficialGeral,
+    evolucaoPorGrupoMacro: oficialPorGrupo,
+    faixaProgressoGeral: faixaProgresso(oficialGeral.valor),
     prazo: statusPrazo(atividades, dataReferencia, {
       ...ponderacao,
       filtros,
@@ -68,7 +98,7 @@ export function montarIndicadoresPainel(entrada: EntradaPainel): IndicadoresPain
     }),
     semanasRestantes: semanasRestantes(dataReferencia, dataFimPlanejada),
     resumo: resumirAtividades(atividades, filtros),
-    porGrupoMacro: percentualPorGrupoMacro(atividades, { ...ponderacao, filtros }),
+    porGrupoMacro: porGrupo,
     porElementoVisual: percentuaisPorElementoVisual(atividades, {
       ...ponderacao,
       filtros,

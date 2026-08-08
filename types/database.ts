@@ -94,6 +94,9 @@ export type Database = {
           cliente: string | null;
           data_inicio_planejada: string | null;
           data_fim_planejada: string | null;
+          /** Rollup da linha raiz do Smartsheet (0–100). Percentual OFICIAL. */
+          percentual_smartsheet: number | null;
+          percentual_smartsheet_em: string | null;
           criado_em: string;
           atualizado_em: string;
         };
@@ -103,6 +106,8 @@ export type Database = {
           cliente?: string | null;
           data_inicio_planejada?: string | null;
           data_fim_planejada?: string | null;
+          percentual_smartsheet?: number | null;
+          percentual_smartsheet_em?: string | null;
           criado_em?: string;
           atualizado_em?: string;
         };
@@ -112,6 +117,8 @@ export type Database = {
           cliente?: string | null;
           data_inicio_planejada?: string | null;
           data_fim_planejada?: string | null;
+          percentual_smartsheet?: number | null;
+          percentual_smartsheet_em?: string | null;
           criado_em?: string;
           atualizado_em?: string;
         };
@@ -126,6 +133,8 @@ export type Database = {
           nome: string;
           /** Nome exato do nível 1 no .xlsx do Smartsheet — chave de casamento do import. */
           nome_smartsheet: string;
+          /** Rollup da linha de nível 1 no Smartsheet (0–100). NULL = sem apontamento. */
+          percentual_smartsheet: number | null;
           ordem: number;
           criado_em: string;
           atualizado_em: string;
@@ -135,6 +144,7 @@ export type Database = {
           projeto_id: string;
           nome: string;
           nome_smartsheet: string;
+          percentual_smartsheet?: number | null;
           ordem?: number;
           criado_em?: string;
           atualizado_em?: string;
@@ -144,6 +154,7 @@ export type Database = {
           projeto_id?: string;
           nome?: string;
           nome_smartsheet?: string;
+          percentual_smartsheet?: number | null;
           ordem?: number;
           criado_em?: string;
           atualizado_em?: string;

@@ -8,7 +8,7 @@
  */
 
 import Link from 'next/link';
-import { montarIndicadoresPainel } from '@/lib/calculos';
+import { divergenciaRelevante, montarIndicadoresPainel } from '@/lib/calculos';
 import {
   DATA_FIM_PLANEJADA_PADRAO,
   carregarContextoCronograma,
@@ -50,6 +50,12 @@ export default async function PainelPage() {
     atividades,
     dataReferencia: hoje,
     dataFimPlanejada,
+    // O percentual OFICIAL é o rollup do Smartsheet. A resolução (usar o rollup
+    // ou cair no calculado) mora em lib/calculos/oficial.ts, nunca aqui.
+    rollupSmartsheetGeral: projeto?.percentual_smartsheet ?? null,
+    rollupSmartsheetPorGrupo: Object.fromEntries(
+      grupos.map((grupo) => [grupo.id, grupo.percentual_smartsheet]),
+    ),
   });
 
   const { prazo, resumo } = indicadores;
@@ -103,7 +109,21 @@ export default async function PainelPage() {
             <MetricCard
               label="Evolução física"
               value={formatarPercentual(indicadores.percentualEvolucaoGeral)}
-              hint="Média ponderada pela duração das atividades"
+              hint={
+                indicadores.evolucaoGeral.fonte === 'smartsheet' ? (
+                  <>
+                    Rollup do Smartsheet
+                    {divergenciaRelevante(indicadores.evolucaoGeral) ? (
+                      <>
+                        {' '}· pelas atividades apontadas daria{' '}
+                        {formatarPercentual(indicadores.evolucaoGeral.calculado)}
+                      </>
+                    ) : null}
+                  </>
+                ) : (
+                  'Calculado pelas atividades — cronograma ainda não importado'
+                )
+              }
             >
               <div className="mt-3">
                 <ProgressBar

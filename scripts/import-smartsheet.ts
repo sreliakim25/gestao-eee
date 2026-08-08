@@ -38,6 +38,7 @@ import {
   removerOrfas,
   upsertAtividades,
   upsertGrupos,
+  atualizarPercentualDoProjeto,
   type AtividadeOrfa,
 } from './import/upsert';
 import type { AtividadeInsert, TipoElementoVisual } from '@/types/database';
@@ -215,6 +216,16 @@ async function executarEtapaBanco(
     idPorGrupo = await upsertGrupos(cliente, payloadGrupos);
     console.log(
       `  grupos_macro: ${idPorGrupo.size} gravados (upsert por projeto_id+nome_smartsheet).`,
+    );
+    // Percentual OFICIAL do Painel: o rollup da linha raiz do Smartsheet.
+    await atualizarPercentualDoProjeto(
+      cliente,
+      projetoId,
+      resultado.raiz.percentualConcluido,
+      new Date().toISOString(),
+    );
+    console.log(
+      `  projetos.percentual_smartsheet: ${resultado.raiz.percentualConcluido ?? 'NULL (sem rollup no export)'}`,
     );
   }
 

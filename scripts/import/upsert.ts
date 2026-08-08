@@ -45,6 +45,9 @@ export function montarPayloadGrupos(
       projeto_id: projetoId,
       nome_smartsheet: g.nomeSmartsheet,
       nome: rotulosExistentes.get(g.nomeSmartsheet) ?? g.nomeFallback,
+      // Rollup da linha de nível 1. NULL quando a coluna vem vazia no export —
+      // isso significa "sem apontamento", não zero (ver lib/calculos/oficial.ts).
+      percentual_smartsheet: g.percentualConcluido,
       ordem: g.ordem,
     }))
     .sort((a, b) => a.ordem - b.ordem);
@@ -266,4 +269,33 @@ export async function removerOrfas(cliente: Cliente, orfas: readonly AtividadeOr
     .in('id', orfas.map((o) => o.id));
   if (error) throw new Error(`Falha ao remover atividades órfãs: ${error.message}`);
   return orfas.length;
+}
+
+/**
+ * Grava o rollup da linha raiz do Smartsheet em `projetos.percentual_smartsheet`.
+ *
+ * Esse é o número OFICIAL de evolução física exibido no Painel — o mesmo que a
+ * equipe vê no Smartsheet. Não o recalculamos: importamos o valor exportado,
+ * porque replicar a fórmula de rollup exigiria adivinhar o arredondamento e
+ * quebraria em silêncio se a Smartsheet mudasse a regra.
+ *
+ * `agoraIso` é injetado para o script continuar determinístico nos testes.
+ */
+export async function atualizarPercentualDoProjeto(
+  cliente: Cliente,
+  projetoId: string,
+  percentualSmartsheet: number | null,
+  agoraIso: string,
+): Promise<void> {
+  const { error } = await cliente
+    .from('projetos')
+    .update({
+      percentual_smartsheet: percentualSmartsheet,
+      percentual_smartsheet_em: agoraIso,
+    })
+    .eq('id', projetoId);
+
+  if (error) {
+    throw new Error(`Falha ao gravar o percentual oficial do projeto: ${error.message}`);
+  }
 }
