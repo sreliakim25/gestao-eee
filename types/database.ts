@@ -97,6 +97,8 @@ export type Database = {
           /** Rollup da linha raiz do Smartsheet (0–100). Percentual OFICIAL. */
           percentual_smartsheet: number | null;
           percentual_smartsheet_em: string | null;
+          smartsheet_sheet_id: string | null;
+          smartsheet_sincronizado_em: string | null;
           criado_em: string;
           atualizado_em: string;
         };
@@ -108,6 +110,8 @@ export type Database = {
           data_fim_planejada?: string | null;
           percentual_smartsheet?: number | null;
           percentual_smartsheet_em?: string | null;
+          smartsheet_sheet_id?: string | null;
+          smartsheet_sincronizado_em?: string | null;
           criado_em?: string;
           atualizado_em?: string;
         };
@@ -119,6 +123,8 @@ export type Database = {
           data_fim_planejada?: string | null;
           percentual_smartsheet?: number | null;
           percentual_smartsheet_em?: string | null;
+          smartsheet_sheet_id?: string | null;
+          smartsheet_sincronizado_em?: string | null;
           criado_em?: string;
           atualizado_em?: string;
         };
@@ -215,6 +221,8 @@ export type Database = {
           caminho_wbs: string;
           /** true = folha do WBS. false = linha-mãe (não entra em média de evolução). */
           eh_folha: boolean;
+          /** rowId da API do Smartsheet — chave de upsert estável. NULL se veio do .xlsx. */
+          smartsheet_row_id: string | null;
           predecessores: string | null;
           duracao_dias: number | null;
           data_inicio_planejada: string | null;
@@ -234,6 +242,7 @@ export type Database = {
           nome: string;
           caminho_wbs: string;
           eh_folha?: boolean;
+          smartsheet_row_id?: string | null;
           predecessores?: string | null;
           duracao_dias?: number | null;
           data_inicio_planejada?: string | null;
@@ -253,6 +262,7 @@ export type Database = {
           nome?: string;
           caminho_wbs?: string;
           eh_folha?: boolean;
+          smartsheet_row_id?: string | null;
           predecessores?: string | null;
           duracao_dias?: number | null;
           data_inicio_planejada?: string | null;

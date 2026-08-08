@@ -12,7 +12,9 @@
     "test:e2e": "playwright test",
     "import:cronograma": "tsx scripts/import-smartsheet.ts",
     "import:orcamento": "tsx scripts/import-orcamento.ts",
-    "db:aplicar": "tsx scripts/aplicar-schema.ts"
+    "db:aplicar": "tsx scripts/aplicar-schema.ts",
+    "smartsheet:sync": "tsx scripts/sync-smartsheet.ts",
+    "smartsheet:listar": "tsx scripts/sync-smartsheet.ts --listar"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
