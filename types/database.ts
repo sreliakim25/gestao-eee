@@ -213,6 +213,8 @@ export type Database = {
           nome: string;
           /** Caminho WBS completo dentro do grupo macro, unido por " > ". Chave de upsert. */
           caminho_wbs: string;
+          /** true = folha do WBS. false = linha-mãe (não entra em média de evolução). */
+          eh_folha: boolean;
           predecessores: string | null;
           duracao_dias: number | null;
           data_inicio_planejada: string | null;
@@ -231,6 +233,7 @@ export type Database = {
           wbs_nivel?: number;
           nome: string;
           caminho_wbs: string;
+          eh_folha?: boolean;
           predecessores?: string | null;
           duracao_dias?: number | null;
           data_inicio_planejada?: string | null;
@@ -249,6 +252,7 @@ export type Database = {
           wbs_nivel?: number;
           nome?: string;
           caminho_wbs?: string;
+          eh_folha?: boolean;
           predecessores?: string | null;
           duracao_dias?: number | null;
           data_inicio_planejada?: string | null;

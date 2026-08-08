@@ -24,7 +24,10 @@ export type AtividadeCalculo = Pick<
   | 'data_fim_planejada'
   | 'percentual_concluido'
   | 'caminho_critico'
->;
+> &
+  // Opcional para não quebrar fixtures antigas: quando ausente, a atividade é
+  // tratada como folha (caso conservador — ela conta em vez de sumir).
+  Partial<Pick<Atividade, 'eh_folha'>>;
 
 /** Colunas de `avancos_semanais` usadas pelos cálculos. */
 export type AvancoSemanalCalculo = Pick<
@@ -74,6 +77,15 @@ export interface FiltrosAtividade {
   apenasCaminhoCritico?: boolean;
   /** Só atividades vinculadas a algum elemento visual. */
   apenasComElementoVisual?: boolean;
+  /**
+   * Inclui as linhas-mãe do WBS na agregação. Padrão: `false`.
+   *
+   * Uma linha-mãe não é trabalho, é o agrupamento do trabalho dos filhos —
+   * somar as duas na mesma média é dupla contagem. Nos dados reais isso muda
+   * o percentual calculado de 3,26% (só folhas) para 0,93% (folhas + mães).
+   * Só ative para inspecionar a hierarquia crua.
+   */
+  incluirLinhasMae?: boolean;
 }
 
 /** Resultado de uma agregação de percentual (geral, por grupo ou por elemento). */
@@ -119,14 +131,19 @@ export function filtrarAtividades<T extends AtividadeCalculo>(
   filtros?: FiltrosAtividade,
 ): T[] {
   if (!Array.isArray(atividades)) return [];
-  if (!filtros) return [...atividades];
+  // Linhas-mãe ficam fora por padrão, com ou sem outros filtros. `eh_folha`
+  // ausente = folha (fixtures antigas e bases importadas antes da coluna).
+  const somenteFolhas = (lista: readonly T[]) =>
+    filtros?.incluirLinhasMae ? [...lista] : lista.filter((a) => a.eh_folha !== false);
+
+  if (!filtros) return somenteFolhas(atividades);
 
   const grupos = filtros.gruposMacroIds?.length ? new Set(filtros.gruposMacroIds) : null;
   const elementos = filtros.elementosVisuaisIds?.length
     ? new Set(filtros.elementosVisuaisIds)
     : null;
 
-  return atividades.filter((atividade) => {
+  return somenteFolhas(atividades).filter((atividade) => {
     if (grupos && !grupos.has(atividade.grupo_macro_id)) return false;
     if (elementos) {
       if (!atividade.elemento_visual_id) return false;

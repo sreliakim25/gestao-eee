@@ -166,6 +166,15 @@ export function statusPrazo(
     filtros?: FiltrosAtividade;
     /** Sobrescreve a tolerância padrão de ±2 p.p. */
     toleranciaPontosPercentuais?: number;
+    /**
+     * Percentual realizado OFICIAL (rollup do Smartsheet), quando existe.
+     *
+     * Sem isto, o Painel exibiria "Evolução física 6,0%" no card de cima e
+     * "Realizado 0,9%" no card ao lado — dois números para a mesma coisa, na
+     * mesma tela. O status de prazo tem que ser julgado contra o número que o
+     * usuário está vendo, senão a tela se contradiz.
+     */
+    percentualRealizadoOficial?: number | null;
   } = {},
 ): AvaliacaoPrazo {
   const alvo = filtrarAtividades(atividades, opcoes.filtros);
@@ -181,7 +190,13 @@ export function statusPrazo(
     somaRealizada += limitarPercentual(atividade.percentual_concluido) * peso;
     pesoTotal += peso;
   }
-  const percentualRealizado = pesoTotal > 0 ? arredondar(somaRealizada / pesoTotal) : 0;
+  const calculado = pesoTotal > 0 ? arredondar(somaRealizada / pesoTotal) : 0;
+  // O oficial vence quando existe — ver o comentário em `percentualRealizadoOficial`.
+  const oficial = opcoes.percentualRealizadoOficial;
+  const percentualRealizado =
+    oficial === null || oficial === undefined || Number.isNaN(oficial)
+      ? calculado
+      : arredondar(limitarPercentual(oficial));
 
   const tolerancia = opcoes.toleranciaPontosPercentuais ?? TOLERANCIA_STATUS_PRAZO_PP;
   const desvio = arredondar(percentualRealizado - planejado.percentual);

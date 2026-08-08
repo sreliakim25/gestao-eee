@@ -98,6 +98,10 @@ export function montarPayloadAtividades(
       wbs_nivel: atividade.wbsNivel,
       // Identidade da linha; `nome` é só o rótulo curto exibido pela UI.
       caminho_wbs: atividade.caminhoWbsTexto,
+      // Linha-mãe do WBS não é trabalho: agrupa o trabalho dos filhos. Contá-la
+      // junto com eles na média de evolução é dupla contagem — ver a migration
+      // 20260807110000_atividades_eh_folha.sql.
+      eh_folha: atividade.ehFolha,
       nome: atividade.nome,
       predecessores: atividade.predecessores,
       duracao_dias: atividade.duracaoDias,

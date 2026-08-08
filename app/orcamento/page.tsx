@@ -25,7 +25,7 @@ export default async function PaginaOrcamento() {
   const { resumos, totais, itensCompraDireta, erroBanco } = await carregarDadosOrcamento();
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 text-[#2B2118]">
+    <div className="mx-auto w-full max-w-6xl text-tinta">
       <header className="border-b-2 border-[#E8A020] pb-4">
         <p className="text-xs uppercase tracking-[0.2em] text-[#8B1A1A]">EEE Novo Mundo</p>
         <h1 className="mt-1 text-3xl font-bold text-[#8B1A1A]">Orçamento / Terceirizado</h1>
@@ -122,7 +122,7 @@ export default async function PaginaOrcamento() {
           </div>
         )}
       </section>
-    </main>
+    </div>
   );
 }
 

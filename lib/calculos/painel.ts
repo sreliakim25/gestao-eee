@@ -95,6 +95,9 @@ export function montarIndicadoresPainel(entrada: EntradaPainel): IndicadoresPain
       ...ponderacao,
       filtros,
       toleranciaPontosPercentuais,
+      // Julga o prazo contra o mesmo número exibido no card de evolução.
+      percentualRealizadoOficial:
+        oficialGeral.fonte === 'smartsheet' ? oficialGeral.valor : null,
     }),
     semanasRestantes: semanasRestantes(dataReferencia, dataFimPlanejada),
     resumo: resumirAtividades(atividades, filtros),

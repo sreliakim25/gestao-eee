@@ -38,7 +38,7 @@ export default async function PaginaConcretagem() {
     .filter((p) => p.validacao.alertas.some((a) => a.codigo === 'VOLUME_ABAIXO_MINIMO')).length;
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 text-[#2B2118]">
+    <div className="mx-auto w-full max-w-5xl text-tinta">
       <header className="border-b-2 border-[#E8A020] pb-4">
         <p className="text-xs uppercase tracking-[0.2em] text-[#8B1A1A]">EEE Novo Mundo</p>
         <h1 className="mt-1 text-3xl font-bold text-[#8B1A1A]">Concretagem</h1>
@@ -117,7 +117,7 @@ export default async function PaginaConcretagem() {
           contrato de mão de obra do terceirizado (ver o módulo de Orçamento).
         </p>
       </section>
-    </main>
+    </div>
   );
 }
 
