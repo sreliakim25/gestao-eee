@@ -6,6 +6,7 @@
  */
 
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { getUsuarioAtual } from '@/lib/supabase/server';
 
@@ -41,6 +42,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         <div className="rounded-lg border border-borda bg-superficie p-5 shadow-sm">
           <LoginForm proximo={proximo} />
+
+          <p className="mt-4 border-t border-borda pt-3 text-sm text-tinta-suave">
+            Ainda não tem acesso?{' '}
+            <Link href="/cadastro" className="text-ouro-escuro underline underline-offset-2">
+              Criar acesso
+            </Link>
+            <br />
+            <span className="text-xs">
+              Um gestor precisa liberar antes de você conseguir entrar. Esqueceu a senha? Peça a
+              um gestor para redefinir.
+            </span>
+          </p>
         </div>
 
         <p className="mt-6 text-center text-sm text-tinta-suave">

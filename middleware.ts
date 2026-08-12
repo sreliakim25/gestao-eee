@@ -20,6 +20,12 @@ import { atualizarSessao } from '@/lib/supabase/middleware';
 const ROTA_LOGIN = '/login';
 
 /**
+ * Rotas alcançáveis sem sessão. `/cadastro` precisa estar aqui: é onde a
+ * pessoa cria a conta, e exigir login para criar login seria um círculo.
+ */
+const ROTAS_PUBLICAS = ['/login', '/cadastro', '/api/cadastro'];
+
+/**
  * Rotas que NÃO são navegação de usuário e por isso não podem ser
  * redirecionadas para o login.
  *
@@ -51,11 +57,20 @@ export async function middleware(request: NextRequest) {
 
   const { pathname, search } = request.nextUrl;
   const autenticado = temCookieDeSessao(request);
+  const ehPublica = ROTAS_PUBLICAS.some(
+    (rota) => pathname === rota || pathname.startsWith(`${rota}/`),
+  );
   const ehLogin = pathname === ROTA_LOGIN || pathname.startsWith(`${ROTA_LOGIN}/`);
 
   // O cron se autentica sozinho, no próprio route handler.
   if (pathname === PREFIXO_CRON || pathname.startsWith(`${PREFIXO_CRON}/`)) {
     return resposta;
+  }
+
+  // Rota pública passa antes de qualquer checagem de sessão. `/api/cadastro`
+  // precisa disto: exigir login para criar login seria um círculo.
+  if (ehPublica) {
+    return autenticado && ehLogin ? redirecionarParaPainel(request, resposta) : resposta;
   }
 
   // Cliente que chama fetch() espera JSON. Um 307 para /login devolveria HTML
@@ -64,7 +79,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 });
   }
 
-  if (!autenticado && !ehLogin) {
+  if (!autenticado && !ehPublica) {
     const destino = request.nextUrl.clone();
     destino.pathname = ROTA_LOGIN;
     destino.search = '';
@@ -72,14 +87,15 @@ export async function middleware(request: NextRequest) {
     return redirecionarPreservandoCookies(destino, resposta);
   }
 
-  if (autenticado && ehLogin) {
-    const destino = request.nextUrl.clone();
-    destino.pathname = '/';
-    destino.search = '';
-    return redirecionarPreservandoCookies(destino, resposta);
-  }
-
   return resposta;
+}
+
+/** Usuário já autenticado não fica na tela de login. */
+function redirecionarParaPainel(request: NextRequest, resposta: NextResponse): NextResponse {
+  const destino = request.nextUrl.clone();
+  destino.pathname = '/';
+  destino.search = '';
+  return redirecionarPreservandoCookies(destino, resposta);
 }
 
 /** Redireciona sem perder os cookies renovados por `atualizarSessao`. */

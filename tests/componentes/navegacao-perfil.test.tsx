@@ -23,8 +23,8 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('navigation (regras de visibilidade)', () => {
-  it('expõe os 9 módulos do app', () => {
-    expect(APP_MODULES).toHaveLength(9);
+  it('expõe os 11 módulos do app', () => {
+    expect(APP_MODULES).toHaveLength(11);
     expect(APP_MODULES.map((modulo) => modulo.href)).toEqual([
       '/',
       '/cronograma',
@@ -35,12 +35,16 @@ describe('navigation (regras de visibilidade)', () => {
       '/concretagem',
       '/orcamento',
       '/analise',
+      '/usuarios',
+      '/conta',
     ]);
   });
 
   it('gestor e fiscal enxergam tudo; campo não enxerga Orçamento nem Análise IA', () => {
-    expect(visibleModules('gestor')).toHaveLength(9);
-    expect(visibleModules('fiscal')).toHaveLength(9);
+    // Gestor vê tudo; fiscal não vê Acessos (só gestor libera).
+    expect(visibleModules('gestor')).toHaveLength(11);
+    expect(visibleModules('fiscal')).toHaveLength(10);
+    expect(visibleModules('fiscal').map((m) => m.href)).not.toContain('/usuarios');
     const doCampo = visibleModules('campo').map((m) => m.href);
     expect(doCampo).not.toContain('/orcamento');
     expect(doCampo).not.toContain('/analise');
@@ -70,13 +74,13 @@ describe('<MainNav /> por perfil', () => {
     render(<MainNav perfil="gestor" />);
     expect(screen.getByRole('link', { name: 'Orçamento' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Análise IA' })).toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(9);
+    expect(screen.getAllByRole('link')).toHaveLength(11);
   });
 
   it('campo não vê o link de Orçamento', () => {
     render(<MainNav perfil="campo" />);
     expect(screen.queryByRole('link', { name: 'Orçamento' })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(7);
+    expect(screen.getAllByRole('link')).toHaveLength(8);
     // Os módulos de produção continuam disponíveis para a equipe de campo.
     expect(screen.getByRole('link', { name: 'Lançamento' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Diário de Obra' })).toBeInTheDocument();

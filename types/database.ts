@@ -30,6 +30,9 @@ export type Json =
 /** Enums do banco (public.*). */
 export type PerfilUsuarioEnum = 'gestor' | 'fiscal' | 'campo';
 
+/** Liberação de acesso: quem se cadastra nasce `pendente`. */
+export type StatusAcesso = 'pendente' | 'ativo' | 'bloqueado';
+
 export type TipoElementoVisual =
   | 'poco_umido'
   | 'camara_grades'
@@ -67,6 +70,9 @@ export type Database = {
           id: string;
           nome: string;
           perfil: PerfilUsuarioEnum;
+          status: StatusAcesso;
+          liberado_em: string | null;
+          liberado_por: string | null;
           criado_em: string;
           atualizado_em: string;
         };
@@ -74,6 +80,9 @@ export type Database = {
           id: string;
           nome?: string;
           perfil?: PerfilUsuarioEnum;
+          status?: StatusAcesso;
+          liberado_em?: string | null;
+          liberado_por?: string | null;
           criado_em?: string;
           atualizado_em?: string;
         };
@@ -81,6 +90,9 @@ export type Database = {
           id?: string;
           nome?: string;
           perfil?: PerfilUsuarioEnum;
+          status?: StatusAcesso;
+          liberado_em?: string | null;
+          liberado_por?: string | null;
           criado_em?: string;
           atualizado_em?: string;
         };
@@ -727,6 +739,7 @@ export type PerfilUsuario = Tabelas['perfis']['Row'];
 export type Projeto = Tabelas['projetos']['Row'];
 export type GrupoMacro = Tabelas['grupos_macro']['Row'];
 export type ElementoVisual = Tabelas['elementos_visuais']['Row'];
+export type PerfilUsuarioUpdate = Tabelas['perfis']['Update'];
 export type Atividade = Tabelas['atividades']['Row'];
 export type HistoricoCronograma = Tabelas['historico_cronograma']['Row'];
 export type HistoricoCronogramaInsert = Tabelas['historico_cronograma']['Insert'];

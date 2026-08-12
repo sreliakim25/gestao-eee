@@ -23,8 +23,14 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-/** Rotas que não recebem a casca. */
-const ROTAS_SEM_CASCA = ['/login'];
+/**
+ * Rotas sem a casca do app.
+ *
+ * `/cadastro` e `/aguardando` entram aqui porque quem está nelas ainda NÃO tem
+ * acesso liberado — exibir o menu completo de módulos daria a impressão de que
+ * a pessoa já entrou, e todo clique só a devolveria para a tela de espera.
+ */
+const ROTAS_SEM_CASCA = ['/login', '/cadastro', '/aguardando'];
 
 export function AppShell({ perfil, emailUsuario, children }: AppShellProps) {
   const caminho = usePathname() ?? '/';
@@ -32,7 +38,11 @@ export function AppShell({ perfil, emailUsuario, children }: AppShellProps) {
     (rota) => caminho === rota || caminho.startsWith(`${rota}/`),
   );
 
-  if (semCasca) {
+  // Cinto e suspensório: além da lista de rotas, quem não está com acesso
+  // liberado nunca recebe a navegação, em qualquer rota.
+  const acessoLiberado = perfil === null || perfil.status === 'ativo';
+
+  if (semCasca || !acessoLiberado) {
     return <main className="flex min-h-dvh flex-col">{children}</main>;
   }
 

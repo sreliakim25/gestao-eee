@@ -20,7 +20,7 @@ export interface AppModule {
   allowedProfiles?: readonly PerfilUsuarioEnum[];
 }
 
-/** Os 9 módulos, na ordem em que a obra os usa. */
+/** Os módulos, na ordem em que a obra os usa. */
 export const APP_MODULES: readonly AppModule[] = [
   {
     href: '/',
@@ -70,6 +70,18 @@ export const APP_MODULES: readonly AppModule[] = [
     description: 'Leitura automática dos indicadores: situação, riscos e recomendações',
     // Consolida o quadro inteiro da obra, incluindo risco de prazo.
     allowedProfiles: ['gestor', 'fiscal'],
+  },
+  {
+    href: '/usuarios',
+    label: 'Acessos',
+    description: 'Liberar acesso e definir o perfil de cada pessoa',
+    // Só gestor libera acesso — espelha a RLS de perfis.
+    allowedProfiles: ['gestor'],
+  },
+  {
+    href: '/conta',
+    label: 'Minha conta',
+    description: 'Dados de acesso e troca da própria senha',
   },
 ];
 

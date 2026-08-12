@@ -11,7 +11,7 @@ import 'server-only';
 
 import { redirect } from 'next/navigation';
 import { getPerfilAtual, getUsuarioAtual } from '@/lib/supabase/server';
-import type { PerfilUsuario, PerfilUsuarioEnum } from '@/types/database';
+import type { PerfilUsuario, PerfilUsuarioEnum, StatusAcesso } from '@/types/database';
 
 export interface SessaoApp {
   usuarioId: string;
@@ -19,6 +19,8 @@ export interface SessaoApp {
   perfil: PerfilUsuario | null;
   /** Atalho para a renderização condicional. `campo` é o menor privilégio. */
   papel: PerfilUsuarioEnum;
+  /** Liberação de acesso. Só `ativo` enxerga o app. */
+  status: StatusAcesso;
 }
 
 /** Devolve a sessão atual ou redireciona para o login. */
@@ -34,6 +36,7 @@ export async function exigirSessao(): Promise<SessaoApp> {
         email: usuario.email ?? null,
         perfil,
         papel: perfil?.perfil ?? 'campo',
+        status: perfil?.status ?? 'pendente',
       };
     }
   } catch {
@@ -42,5 +45,12 @@ export async function exigirSessao(): Promise<SessaoApp> {
   }
 
   if (!sessao) redirect('/login');
+
+  // Cadastro feito, acesso ainda não liberado (ou revogado): a pessoa está
+  // autenticada, mas não entra no app. A RLS já a impediria de ler qualquer
+  // coisa; este desvio existe para ela ver uma explicação em vez de telas
+  // vazias sem motivo aparente.
+  if (sessao.status !== 'ativo') redirect('/aguardando');
+
   return sessao;
 }
