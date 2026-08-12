@@ -17,6 +17,7 @@ import {
 } from './evolucao';
 import { faixaProgresso } from './progresso';
 import { percentualOficial, type PercentualOficial } from './oficial';
+import { periodosPorGrupoMacro, type PeriodoFrente } from './periodos';
 import { statusPrazo, type AvaliacaoPrazo } from './prazo';
 import type {
   AgregadoPercentual,
@@ -56,6 +57,8 @@ export interface IndicadoresPainel {
   evolucaoGeral: PercentualOficial;
   /** Oficial por grupo macro, mesma regra, indexado pelo id do grupo. */
   evolucaoPorGrupoMacro: Record<string, PercentualOficial>;
+  /** Janela de execução e desvio de linha de base por grupo macro. */
+  periodosPorGrupoMacro: Record<string, PeriodoFrente>;
   faixaProgressoGeral: FaixaProgresso;
   prazo: AvaliacaoPrazo;
   semanasRestantes: number;
@@ -102,6 +105,7 @@ export function montarIndicadoresPainel(entrada: EntradaPainel): IndicadoresPain
     semanasRestantes: semanasRestantes(dataReferencia, dataFimPlanejada),
     resumo: resumirAtividades(atividades, filtros),
     porGrupoMacro: porGrupo,
+    periodosPorGrupoMacro: periodosPorGrupoMacro(atividades, filtros),
     porElementoVisual: percentuaisPorElementoVisual(atividades, {
       ...ponderacao,
       filtros,

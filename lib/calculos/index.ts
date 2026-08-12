@@ -88,6 +88,14 @@ export {
 } from './oficial';
 
 export {
+  LIMIAR_DESVIO_DIAS,
+  desvioRelevante,
+  periodoDeAtividades,
+  periodosPorGrupoMacro,
+  type PeriodoFrente,
+} from './periodos';
+
+export {
   montarIndicadoresPainel,
   type EntradaPainel,
   type IndicadoresPainel,

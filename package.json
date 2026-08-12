@@ -14,7 +14,8 @@
     "import:orcamento": "tsx scripts/import-orcamento.ts",
     "db:aplicar": "tsx scripts/aplicar-schema.ts",
     "smartsheet:sync": "tsx scripts/sync-smartsheet.ts",
-    "smartsheet:listar": "tsx scripts/sync-smartsheet.ts --listar"
+    "smartsheet:listar": "tsx scripts/sync-smartsheet.ts --listar",
+    "linha-base": "tsx scripts/definir-linha-base.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

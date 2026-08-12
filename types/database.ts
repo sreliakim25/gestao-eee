@@ -227,6 +227,9 @@ export type Database = {
           duracao_dias: number | null;
           data_inicio_planejada: string | null;
           data_fim_planejada: string | null;
+          /** Linha de base congelada por trigger — o sync não sobrescreve. */
+          data_inicio_linha_base: string | null;
+          data_fim_linha_base: string | null;
           percentual_concluido: number;
           caminho_critico: boolean;
           folga_dias: number | null;
@@ -247,6 +250,8 @@ export type Database = {
           duracao_dias?: number | null;
           data_inicio_planejada?: string | null;
           data_fim_planejada?: string | null;
+          data_inicio_linha_base?: string | null;
+          data_fim_linha_base?: string | null;
           percentual_concluido?: number;
           caminho_critico?: boolean;
           folga_dias?: number | null;
@@ -267,6 +272,8 @@ export type Database = {
           duracao_dias?: number | null;
           data_inicio_planejada?: string | null;
           data_fim_planejada?: string | null;
+          data_inicio_linha_base?: string | null;
+          data_fim_linha_base?: string | null;
           percentual_concluido?: number;
           caminho_critico?: boolean;
           folga_dias?: number | null;

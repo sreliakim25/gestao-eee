@@ -27,7 +27,7 @@ export type AtividadeCalculo = Pick<
 > &
   // Opcional para não quebrar fixtures antigas: quando ausente, a atividade é
   // tratada como folha (caso conservador — ela conta em vez de sumir).
-  Partial<Pick<Atividade, 'eh_folha'>>;
+  Partial<Pick<Atividade, 'eh_folha' | 'data_inicio_linha_base' | 'data_fim_linha_base'>>;
 
 /** Colunas de `avancos_semanais` usadas pelos cálculos. */
 export type AvancoSemanalCalculo = Pick<

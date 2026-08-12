@@ -197,6 +197,7 @@ export default async function PainelPage() {
                     nome={grupo.nome}
                     grupoMacroId={grupo.id}
                     agregado={indicadores.porGrupoMacro[grupo.id]}
+                    periodo={indicadores.periodosPorGrupoMacro[grupo.id]}
                   />
                 ))}
               </div>
