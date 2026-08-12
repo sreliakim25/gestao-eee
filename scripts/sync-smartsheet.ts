@@ -35,6 +35,7 @@ import {
   detectarOrfas,
   montarPayloadAtividades,
   montarPayloadGrupos,
+  registrarHistoricoCronograma,
   upsertAtividades,
   upsertGrupos,
 } from './import/upsert';
@@ -188,6 +189,24 @@ async function main(): Promise<void> {
   const orfas = detectarOrfas(existentes, payload);
   const gravadas = await upsertAtividades(cliente, payload);
   console.log(`  atividades: ${gravadas} gravadas.`);
+
+  // Registro diário: é a única fonte da trajetória do cronograma.
+  const folhasDoDia = resultado.atividades.filter((a) => a.ehFolha);
+  await registrarHistoricoCronograma(
+    cliente,
+    projetoId,
+    new Date().toISOString().slice(0, 10),
+    {
+      dataInicioPlanejada: resultado.raiz.dataInicioPlanejada,
+      dataFimPlanejada: resultado.raiz.dataFimPlanejada,
+      percentualSmartsheet: resultado.raiz.percentualConcluido,
+      totalAtividades: folhasDoDia.length,
+      atividadesCriticas: resultado.atividades.filter((a) => a.caminhoCritico).length,
+      atividadesConcluidas: folhasDoDia.filter((a) => a.percentualConcluido >= 100).length,
+      origem: 'sync',
+    },
+  );
+  console.log('  historico_cronograma: registro do dia gravado.');
 
   linha();
   if (orfas.length === 0) {

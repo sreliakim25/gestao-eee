@@ -21,6 +21,7 @@ import type {
   GrupoMacro,
   Projeto,
 } from '@/types/database';
+import type { RegistroHistorico } from '@/lib/calculos';
 
 /** Fim planejado da obra segundo o Smartsheet — usado só se o banco não responder. */
 export const DATA_FIM_PLANEJADA_PADRAO = '2027-01-26';
@@ -164,5 +165,44 @@ export async function carregarDiarioDoDia(data: string): Promise<DiarioDoDia> {
       datasComRegistro: [],
       erro: mensagemDeErro('Diário de obra indisponível.'),
     };
+  }
+}
+
+/**
+ * Registros diários do cronograma, do mais antigo para o mais novo.
+ *
+ * É a única fonte da trajetória: `atividades` guarda só o estado atual.
+ * `limite` evita puxar anos de série numa obra longa — o gráfico do Cronograma
+ * mostra a janela recente, e o histórico completo continua no banco.
+ */
+export async function carregarHistoricoCronograma(limite = 180): Promise<{
+  registros: RegistroHistorico[];
+  erro: string | null;
+}> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('historico_cronograma')
+      // String única de propósito: concatenar quebra a inferência de tipo do
+      // supabase-js e o retorno vira `GenericStringError`.
+      .select('data_referencia, data_inicio_planejada, data_fim_planejada, duracao_dias, percentual_smartsheet, total_atividades, atividades_criticas, atividades_concluidas')
+      .order('data_referencia', { ascending: false })
+      .limit(limite);
+
+    if (error) {
+      return { registros: [], erro: mensagemDeErro('Não foi possível ler o histórico do cronograma.') };
+    }
+
+    // Vem desc do banco (para o `limit` pegar os mais recentes) e é devolvido
+    // asc, que é a ordem em que o gráfico desenha.
+    const registros = [...(data ?? [])].reverse().map((linha) => ({
+      ...linha,
+      percentual_smartsheet:
+        linha.percentual_smartsheet === null ? null : Number(linha.percentual_smartsheet),
+    })) as RegistroHistorico[];
+
+    return { registros, erro: null };
+  } catch {
+    return { registros: [], erro: mensagemDeErro('Não foi possível ler o histórico do cronograma.') };
   }
 }

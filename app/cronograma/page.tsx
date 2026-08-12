@@ -6,9 +6,14 @@
  * prontos do banco — este app não recalcula CPM.
  */
 
+import { HistoricoCronograma } from '@/components/cronograma/HistoricoCronograma';
 import { ScheduleView } from '@/components/cronograma/ScheduleView';
 import { Alert, EmptyState, PageHeading } from '@/components/ui/primitives';
-import { carregarContextoCronograma } from '@/lib/dados/consultas';
+import { gerarInsights, montarSerieHistorico } from '@/lib/calculos';
+import {
+  carregarContextoCronograma,
+  carregarHistoricoCronograma,
+} from '@/lib/dados/consultas';
 import { exigirSessao } from '@/lib/dados/sessao';
 import { dataDeHojeISO, formatarDataBR, formatarInteiro } from '@/lib/ui/formato';
 
@@ -23,10 +28,15 @@ interface CronogramaPageProps {
 export default async function CronogramaPage({ searchParams }: CronogramaPageProps) {
   await exigirSessao();
 
-  const [{ grupos, elementos, atividades, erro }, parametros] = await Promise.all([
+  const [{ grupos, elementos, atividades, erro }, { registros }, parametros] = await Promise.all([
     carregarContextoCronograma(),
+    carregarHistoricoCronograma(),
     searchParams,
   ]);
+
+  // Série e leituras vêm do motor de cálculo — a página só entrega à UI.
+  const resumoHistorico = montarSerieHistorico(registros);
+  const insights = gerarInsights(resumoHistorico);
 
   const hoje = dataDeHojeISO();
 
@@ -74,6 +84,8 @@ export default async function CronogramaPage({ searchParams }: CronogramaPagePro
           }}
         />
       )}
+
+      <HistoricoCronograma resumo={resumoHistorico} insights={insights} />
     </>
   );
 }

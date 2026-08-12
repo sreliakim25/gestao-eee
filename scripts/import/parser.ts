@@ -166,6 +166,31 @@ export function paraTexto(valor: unknown): string | null {
 }
 
 /** Número tolerante a vírgula decimal (pt-BR) e a sufixos. */
+/**
+ * Maior folga plausível num cronograma de obra, em dias. Serve de peneira
+ * contra o valor-sentinela do Smartsheet.
+ *
+ * A API devolve `-922337203.685478` na coluna Folga de algumas linhas — é
+ * `int64` mínimo dividido por 10^10, o jeito do Smartsheet dizer "folga não
+ * aplicável". O .xlsx exportado não traz isso, então o problema só apareceu ao
+ * ligar o sync pela API: o valor estoura `numeric(8,2)` e derruba o lote
+ * inteiro do upsert com "numeric field overflow".
+ */
+export const LIMITE_FOLGA_DIAS = 100_000;
+
+/**
+ * Folga em dias, com sentinela do Smartsheet convertido em `null`.
+ * `null` aqui significa "não informada", que é exatamente o que a sentinela
+ * quer dizer — melhor do que gravar um número absurdo ou zero (que seria lido
+ * como "está no limite do prazo").
+ */
+export function paraFolgaDias(valor: unknown): number | null {
+  const numero = paraNumero(valor);
+  if (numero === null) return null;
+  if (!Number.isFinite(numero) || Math.abs(numero) > LIMITE_FOLGA_DIAS) return null;
+  return numero;
+}
+
 export function paraNumero(valor: unknown): number | null {
   if (valor === null || valor === undefined || valor === '') return null;
   if (typeof valor === 'number') return Number.isFinite(valor) ? valor : null;
@@ -376,7 +401,7 @@ export function interpretarLinhas(linhas: readonly LinhaBruta[]): ResultadoParse
       // Célula vazia = atividade não iniciada; o banco exige NOT NULL 0–100.
       percentualConcluido: percentual ?? 0,
       caminhoCritico: paraBooleano(atual.linha.celulas.caminhoCritico),
-      folgaDias: paraNumero(atual.linha.celulas.folga),
+      folgaDias: paraFolgaDias(atual.linha.celulas.folga),
       recurso: paraTexto(atual.linha.celulas.recurso),
       ehFolha,
       tipoElementoVisual: inferirElementoVisual(caminhoWbs, grupoAtual.nomeSmartsheet),

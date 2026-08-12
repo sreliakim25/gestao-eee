@@ -303,3 +303,45 @@ export async function atualizarPercentualDoProjeto(
     throw new Error(`Falha ao gravar o percentual oficial do projeto: ${error.message}`);
   }
 }
+
+/**
+ * Grava o registro diário do estado do cronograma.
+ *
+ * Upsert por (projeto_id, data_referencia): rodar o sync várias vezes no mesmo
+ * dia atualiza a linha do dia. O que interessa é a série diária, não cada
+ * execução — e sem isso um dia com três syncs pesaria três vezes no gráfico.
+ *
+ * `dataReferencia` é injetada para o script permanecer determinístico.
+ */
+export async function registrarHistoricoCronograma(
+  cliente: Cliente,
+  projetoId: string,
+  dataReferencia: string,
+  dados: {
+    dataInicioPlanejada: string | null;
+    dataFimPlanejada: string | null;
+    percentualSmartsheet: number | null;
+    totalAtividades: number;
+    atividadesCriticas: number;
+    atividadesConcluidas: number;
+    origem: 'sync' | 'import' | 'manual';
+  },
+): Promise<void> {
+  const { error } = await cliente.from('historico_cronograma').upsert(
+    {
+      projeto_id: projetoId,
+      data_referencia: dataReferencia,
+      data_inicio_planejada: dados.dataInicioPlanejada,
+      data_fim_planejada: dados.dataFimPlanejada,
+      percentual_smartsheet: dados.percentualSmartsheet,
+      total_atividades: dados.totalAtividades,
+      atividades_criticas: dados.atividadesCriticas,
+      atividades_concluidas: dados.atividadesConcluidas,
+      origem: dados.origem,
+    },
+    { onConflict: 'projeto_id,data_referencia' },
+  );
+  if (error) {
+    throw new Error(`Falha ao gravar o histórico do cronograma: ${error.message}`);
+  }
+}

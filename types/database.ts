@@ -209,6 +209,62 @@ export type Database = {
         Relationships: [];
       };
 
+      historico_cronograma: {
+        Row: {
+          id: string;
+          projeto_id: string;
+          /** Dia a que o registro se refere. Único por projeto. */
+          data_referencia: string;
+          data_inicio_planejada: string | null;
+          data_fim_planejada: string | null;
+          /** Coluna gerada no banco a partir das datas. */
+          duracao_dias: number | null;
+          percentual_smartsheet: number | null;
+          total_atividades: number;
+          atividades_criticas: number;
+          atividades_concluidas: number;
+          origem: 'sync' | 'import' | 'manual';
+          criado_em: string;
+          atualizado_em: string;
+        };
+        Insert: {
+          id?: string;
+          projeto_id: string;
+          data_referencia: string;
+          data_inicio_planejada?: string | null;
+          data_fim_planejada?: string | null;
+          percentual_smartsheet?: number | null;
+          total_atividades?: number;
+          atividades_criticas?: number;
+          atividades_concluidas?: number;
+          origem?: 'sync' | 'import' | 'manual';
+          criado_em?: string;
+          atualizado_em?: string;
+        };
+        Update: {
+          id?: string;
+          projeto_id?: string;
+          data_referencia?: string;
+          data_inicio_planejada?: string | null;
+          data_fim_planejada?: string | null;
+          percentual_smartsheet?: number | null;
+          total_atividades?: number;
+          atividades_criticas?: number;
+          atividades_concluidas?: number;
+          origem?: 'sync' | 'import' | 'manual';
+          criado_em?: string;
+          atualizado_em?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'historico_cronograma_projeto_id_fkey';
+            columns: ['projeto_id'];
+            referencedRelation: 'projetos';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
       atividades: {
         Row: {
           id: string;
@@ -672,6 +728,8 @@ export type Projeto = Tabelas['projetos']['Row'];
 export type GrupoMacro = Tabelas['grupos_macro']['Row'];
 export type ElementoVisual = Tabelas['elementos_visuais']['Row'];
 export type Atividade = Tabelas['atividades']['Row'];
+export type HistoricoCronograma = Tabelas['historico_cronograma']['Row'];
+export type HistoricoCronogramaInsert = Tabelas['historico_cronograma']['Insert'];
 export type AvancoSemanal = Tabelas['avancos_semanais']['Row'];
 export type DiarioObra = Tabelas['diario_obra']['Row'];
 export type FotoEvidencia = Tabelas['fotos_evidencia']['Row'];

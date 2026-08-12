@@ -88,6 +88,16 @@ export {
 } from './oficial';
 
 export {
+  montarSerieHistorico,
+  gerarInsights,
+  type Insight,
+  type PontoHistorico,
+  type RegistroHistorico,
+  type ResumoHistorico,
+  type TomInsight,
+} from './historico';
+
+export {
   LIMIAR_DESVIO_DIAS,
   desvioRelevante,
   periodoDeAtividades,
