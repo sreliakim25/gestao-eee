@@ -24,7 +24,7 @@
 import path from 'node:path';
 import process from 'node:process';
 import { config as carregarEnv } from 'dotenv';
-import { parsearCronograma } from './import/parser';
+import { parsearCronograma } from './import/xlsx';
 import { montarResumo, NUMEROS_ESPERADOS, type ResumoImport } from './import/resumo';
 import {
   buscarAtividadesExistentes,

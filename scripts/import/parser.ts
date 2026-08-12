@@ -1,15 +1,21 @@
 /**
- * Parser do export .xlsx do Smartsheet → estrutura tipada do cronograma.
+ * Interpretação do cronograma do Smartsheet → estrutura tipada.
  *
- * Separado em duas camadas de propósito:
- *   1. `lerLinhasBrutas()`  — I/O: abre o arquivo com exceljs e devolve células cruas.
- *   2. `interpretarLinhas()` — pura: reconstrói o WBS, filtra escopo, normaliza tipos.
- * A camada 2 é a que os testes exercitam com fixtures, sem tocar em disco.
+ * Este arquivo é PURO: reconstrói o WBS, filtra escopo e normaliza tipos, sem
+ * tocar em disco nem em rede. Quem entrega as células cruas são dois
+ * fornecedores diferentes, e as regras abaixo valem igual para os dois:
+ *   - `scripts/import/xlsx.ts`          — lê o arquivo exportado (usa exceljs);
+ *   - `scripts/import/smartsheet-api.ts` — lê a API.
  *
- * Biblioteca: `exceljs`. NÃO usar `xlsx` da npm (CVEs conhecidos, sem correção).
+ * A pureza não é preferência de estilo: a rota de sincronização do app importa
+ * este módulo, e um `import` de exceljs aqui arrastaria uma biblioteca de
+ * planilha de vários megabytes para dentro do servidor Next só para interpretar
+ * linhas que vieram da API.
+ *
+ * Sobre a leitura de arquivo: usar `exceljs`, nunca o pacote `xlsx` da npm
+ * (CVEs conhecidos, sem correção).
  */
 
-import ExcelJS from 'exceljs';
 import { inferirElementoVisual, normalizarTexto } from './mapeamento-elementos';
 import type {
   AtividadeParseada,
@@ -71,7 +77,7 @@ export const CHAVE_UPSERT =
  * A leitura é feita POR NOME de cabeçalho e não por posição fixa, para
  * sobreviver a uma reordenação de colunas no Smartsheet.
  */
-const CABECALHOS: Record<string, ColunaSmartsheet> = {
+export const CABECALHOS: Record<string, ColunaSmartsheet> = {
   'nivel de hierarquia': 'nivel',
   predecessores: 'predecessores',
   '% concluida': 'percentualConcluida',
@@ -88,71 +94,12 @@ const CABECALHOS: Record<string, ColunaSmartsheet> = {
 };
 
 /** Colunas sem as quais o parse não faz sentido. */
-const COLUNAS_OBRIGATORIAS: ColunaSmartsheet[] = ['nivel', 'atividade'];
+export const COLUNAS_OBRIGATORIAS: ColunaSmartsheet[] = ['nivel', 'atividade'];
 
 /* -------------------------------------------------------------------------- */
 /* Camada 1 — leitura do arquivo                                              */
 /* -------------------------------------------------------------------------- */
 
-/** Extrai o valor "útil" de uma célula do exceljs (desembrulha fórmula/rich text/hyperlink). */
-function valorDaCelula(valor: ExcelJS.CellValue): unknown {
-  if (valor === null || valor === undefined) return null;
-  if (valor instanceof Date) return valor;
-  if (typeof valor === 'object') {
-    const obj = valor as unknown as Record<string, unknown>;
-    if ('result' in obj) return obj.result ?? null; // fórmula
-    if ('text' in obj && typeof obj.text === 'string') return obj.text; // hyperlink
-    if ('richText' in obj && Array.isArray(obj.richText)) {
-      return (obj.richText as { text: string }[]).map((p) => p.text).join('');
-    }
-    if ('error' in obj) return null;
-  }
-  return valor;
-}
-
-/**
- * Lê a primeira planilha do .xlsx e devolve as linhas cruas indexadas por
- * nome de coluna. Lança erro claro se o arquivo não tiver o cabeçalho esperado.
- */
-export async function lerLinhasBrutas(caminhoArquivo: string): Promise<LinhaBruta[]> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(caminhoArquivo);
-
-  // A aba do cronograma é a primeira; a aba "Comments" do export é ignorada.
-  const planilha = workbook.worksheets[0];
-  if (!planilha) {
-    throw new Error(`Arquivo "${caminhoArquivo}" não tem nenhuma planilha legível.`);
-  }
-
-  // Mapeia cabeçalho → índice de coluna.
-  const indicePorColuna = new Map<ColunaSmartsheet, number>();
-  const linhaCabecalho = planilha.getRow(1);
-  for (let c = 1; c <= planilha.columnCount; c++) {
-    const bruto = valorDaCelula(linhaCabecalho.getCell(c).value);
-    if (typeof bruto !== 'string') continue;
-    const chave = CABECALHOS[normalizarTexto(bruto)];
-    if (chave && !indicePorColuna.has(chave)) indicePorColuna.set(chave, c);
-  }
-
-  const faltando = COLUNAS_OBRIGATORIAS.filter((c) => !indicePorColuna.has(c));
-  if (faltando.length > 0) {
-    throw new Error(
-      `Cabeçalho inesperado em "${caminhoArquivo}". Colunas obrigatórias não encontradas: ` +
-        `${faltando.join(', ')}. Confira se o export do Smartsheet mudou de formato.`,
-    );
-  }
-
-  const linhas: LinhaBruta[] = [];
-  for (let r = 2; r <= planilha.rowCount; r++) {
-    const linha = planilha.getRow(r);
-    const celulas = {} as Record<ColunaSmartsheet, unknown>;
-    for (const [chave, indice] of indicePorColuna) {
-      celulas[chave] = valorDaCelula(linha.getCell(indice).value);
-    }
-    linhas.push({ linhaPlanilha: r, celulas });
-  }
-  return linhas;
-}
 
 /* -------------------------------------------------------------------------- */
 /* Normalizadores de valor (puros, testáveis um a um)                         */
@@ -443,9 +390,4 @@ export function interpretarLinhas(linhas: readonly LinhaBruta[]): ResultadoParse
     linhasVaziasIgnoradas,
     avisos,
   };
-}
-
-/** Atalho: lê o arquivo e já interpreta. */
-export async function parsearCronograma(caminhoArquivo: string): Promise<ResultadoParse> {
-  return interpretarLinhas(await lerLinhasBrutas(caminhoArquivo));
 }

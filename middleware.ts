@@ -19,6 +19,19 @@ import { atualizarSessao } from '@/lib/supabase/middleware';
 
 const ROTA_LOGIN = '/login';
 
+/**
+ * Rotas que NÃO são navegação de usuário e por isso não podem ser
+ * redirecionadas para o login.
+ *
+ * `/api/cron/*` autentica por `CRON_SECRET`, não por sessão. Redirecioná-la
+ * fazia o cron da Vercel receber 307 para /login e encerrar como sucesso — o
+ * sync agendado simplesmente nunca rodaria, e sem erro nenhum no log.
+ */
+const PREFIXO_CRON = '/api/cron';
+
+/** Demais rotas de API: respondem JSON, então recebem 401 em vez de redirect. */
+const PREFIXO_API = '/api';
+
 /** O @supabase/ssr grava a sessão em cookies `sb-<ref>-auth-token[.n]`. */
 function temCookieDeSessao(request: NextRequest): boolean {
   return request.cookies
@@ -39,6 +52,17 @@ export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const autenticado = temCookieDeSessao(request);
   const ehLogin = pathname === ROTA_LOGIN || pathname.startsWith(`${ROTA_LOGIN}/`);
+
+  // O cron se autentica sozinho, no próprio route handler.
+  if (pathname === PREFIXO_CRON || pathname.startsWith(`${PREFIXO_CRON}/`)) {
+    return resposta;
+  }
+
+  // Cliente que chama fetch() espera JSON. Um 307 para /login devolveria HTML
+  // e o `response.json()` estouraria com erro de parse, escondendo o 401 real.
+  if (!autenticado && pathname.startsWith(`${PREFIXO_API}/`)) {
+    return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 });
+  }
 
   if (!autenticado && !ehLogin) {
     const destino = request.nextUrl.clone();

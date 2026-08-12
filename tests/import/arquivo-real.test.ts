@@ -17,7 +17,7 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 
-import { parsearCronograma } from '@/scripts/import/parser';
+import { parsearCronograma } from '@/scripts/import/xlsx';
 import { chaveAtividade, montarPayloadAtividades } from '@/scripts/import/upsert';
 import { montarResumo, NUMEROS_ESPERADOS } from '@/scripts/import/resumo';
 import type { ResultadoParse } from '@/scripts/import/tipos';

@@ -6,6 +6,7 @@
  * prontos do banco — este app não recalcula CPM.
  */
 
+import { BotaoSincronizar } from '@/components/cronograma/BotaoSincronizar';
 import { HistoricoCronograma } from '@/components/cronograma/HistoricoCronograma';
 import { ScheduleView } from '@/components/cronograma/ScheduleView';
 import { Alert, EmptyState, PageHeading } from '@/components/ui/primitives';
@@ -26,9 +27,9 @@ interface CronogramaPageProps {
 }
 
 export default async function CronogramaPage({ searchParams }: CronogramaPageProps) {
-  await exigirSessao();
+  const sessao = await exigirSessao();
 
-  const [{ grupos, elementos, atividades, erro }, { registros }, parametros] = await Promise.all([
+  const [{ projeto, grupos, elementos, atividades, erro }, { registros }, parametros] = await Promise.all([
     carregarContextoCronograma(),
     carregarHistoricoCronograma(),
     searchParams,
@@ -49,6 +50,11 @@ export default async function CronogramaPage({ searchParams }: CronogramaPagePro
             ? `${formatarInteiro(atividades.length)} atividades importadas · posição em ${formatarDataBR(hoje)}`
             : 'Fonte da verdade: cronograma mestre do Smartsheet'
         }
+      />
+
+      <BotaoSincronizar
+        sincronizadoEm={projeto?.smartsheet_sincronizado_em ?? null}
+        podeSincronizar={sessao.papel === 'gestor'}
       />
 
       {erro ? (

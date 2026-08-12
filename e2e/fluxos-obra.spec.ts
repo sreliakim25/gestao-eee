@@ -174,3 +174,39 @@ test.describe('análise IA', () => {
     await expect(page.locator('#conteudo')).toContainText(/lib\/calculos|indicadores/i)
   })
 })
+
+test.describe('sincronização com o Smartsheet', () => {
+  test('o gestor vê o botão e o indicador de frescor do dado', async ({ page }) => {
+    const dados = exigirCredencial('GESTOR')
+    await entrar(page, dados)
+    await page.goto('/cronograma')
+
+    await expect(
+      page.getByRole('button', { name: /sincronizar com o smartsheet/i }),
+    ).toBeVisible()
+    // O indicador é o que responde "o que estou vendo é de hoje?".
+    await expect(page.locator('#conteudo')).toContainText(
+      /última sincronização|ainda não sincronizado/i,
+    )
+  })
+
+  test('a rota de sync recusa quem não está autenticado', async ({ request }) => {
+    const resposta = await request.post('/api/sincronizar')
+    expect(resposta.status()).toBe(401)
+  })
+
+  test('o cron recusa chamada sem o segredo', async ({ request }) => {
+    // Sem esta checagem, qualquer pessoa dispararia o sync com um GET.
+    const resposta = await request.get('/api/cron/sincronizar')
+    expect([401, 503]).toContain(resposta.status())
+  })
+
+  test('a seção de evolução do cronograma aparece', async ({ page }) => {
+    const dados = exigirCredencial('GESTOR')
+    await entrar(page, dados)
+    await page.goto('/cronograma')
+    await expect(
+      page.getByRole('heading', { name: /evolução do cronograma/i }),
+    ).toBeVisible()
+  })
+})

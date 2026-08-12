@@ -15,15 +15,8 @@ import fs from 'node:fs/promises';
 import ExcelJS from 'exceljs';
 
 import fixture from '../fixtures/cronograma-smartsheet.json';
-import {
-  interpretarLinhas,
-  lerLinhasBrutas,
-  paraBooleano,
-  paraDataIso,
-  paraDuracaoDias,
-  paraPercentual,
-  SEPARADOR_CAMINHO_WBS,
-} from '@/scripts/import/parser';
+import { interpretarLinhas, paraBooleano, paraDataIso, paraDuracaoDias, paraPercentual, SEPARADOR_CAMINHO_WBS } from '@/scripts/import/parser';
+import { lerLinhasBrutas } from '@/scripts/import/xlsx';
 import { inferirElementoVisual } from '@/scripts/import/mapeamento-elementos';
 import { montarResumo } from '@/scripts/import/resumo';
 import type { LinhaBruta } from '@/scripts/import/tipos';

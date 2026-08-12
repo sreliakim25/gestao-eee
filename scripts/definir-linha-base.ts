@@ -19,7 +19,7 @@
 
 import { config } from 'dotenv';
 import { Client } from 'pg';
-import { parsearCronograma } from './import/parser';
+import { parsearCronograma } from './import/xlsx';
 
 config({ path: '.env.local', quiet: true });
 

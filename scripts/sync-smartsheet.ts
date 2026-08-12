@@ -19,26 +19,13 @@
  */
 
 import { config } from 'dotenv';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { interpretarLinhas } from './import/parser';
 import {
   ErroSmartsheet,
   buscarPlanilha,
   listarPlanilhas,
 } from './import/smartsheet-api';
-import {
-  atualizarPercentualDoProjeto,
-  buscarAtividadesExistentes,
-  buscarElementosVisuais,
-  buscarGruposExistentes,
-  buscarProjetoId,
-  detectarOrfas,
-  montarPayloadAtividades,
-  montarPayloadGrupos,
-  registrarHistoricoCronograma,
-  upsertAtividades,
-  upsertGrupos,
-} from './import/upsert';
+import { ErroSync, sincronizarCronograma } from '@/lib/smartsheet/sincronizar';
 
 config({ path: '.env.local', quiet: true });
 
@@ -71,7 +58,7 @@ async function main(): Promise<void> {
   }
 
   const sheetId = process.env.SMARTSHEET_SHEET_ID ?? '';
-  const { linhas, rowIdPorLinha, planilha } = await buscarPlanilha(token, sheetId);
+  const { linhas, planilha } = await buscarPlanilha(token, sheetId);
   const resultado = interpretarLinhas(linhas);
 
   linha();
@@ -98,124 +85,39 @@ async function main(): Promise<void> {
   }
 
   // ---- escrita ------------------------------------------------------------
-  let cliente: ReturnType<typeof createAdminClient>;
+  // Delega a `sincronizarCronograma()`, o MESMO caminho que o botão da tela e
+  // o cron usam. Duplicar a orquestração aqui faria o CLI divergir do app na
+  // primeira correção aplicada só de um lado.
+  let relatorio;
   try {
-    cliente = createAdminClient();
-  } catch {
-    console.error('\nERRO: --apply exige NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.\n');
-    process.exitCode = 1;
-    return;
+    relatorio = await sincronizarCronograma();
+  } catch (erro) {
+    if (erro instanceof ErroSync && erro.codigo === 'config') {
+      console.error(`\nERRO: ${erro.message}\n`);
+      process.exitCode = 1;
+      return;
+    }
+    throw erro;
   }
 
   linha();
   console.log('ESCRITA NO BANCO');
   linha();
-
-  const projetoId = await buscarProjetoId(cliente);
-  const { rotulos } = await buscarGruposExistentes(cliente, projetoId);
-  const idPorGrupo = await upsertGrupos(
-    cliente,
-    montarPayloadGrupos(resultado.grupos, projetoId, rotulos),
-  );
-  console.log(`  grupos_macro: ${idPorGrupo.size} gravados.`);
-
-  await atualizarPercentualDoProjeto(
-    cliente,
-    projetoId,
-    resultado.raiz.percentualConcluido,
-    new Date().toISOString(),
-  );
-  // Datas e procedência do cronograma vêm da mesma leitura.
-  await cliente
-    .from('projetos')
-    .update({
-      data_inicio_planejada: resultado.raiz.dataInicioPlanejada,
-      data_fim_planejada: resultado.raiz.dataFimPlanejada,
-      smartsheet_sheet_id: sheetId,
-      smartsheet_sincronizado_em: new Date().toISOString(),
-    })
-    .eq('id', projetoId);
+  console.log(`  grupos_macro: ${relatorio.grupos} gravados.`);
   console.log(
-    `  projetos: rollup ${resultado.raiz.percentualConcluido}% · fim ${resultado.raiz.dataFimPlanejada}`,
+    `  projetos: rollup ${relatorio.percentualSmartsheet}% · fim ${relatorio.dataFimPlanejada}`,
   );
-
-  const idPorTipoElemento = await buscarElementosVisuais(cliente);
-  const { linhas: payload, semGrupo } = montarPayloadAtividades(
-    resultado.atividades,
-    idPorGrupo,
-    idPorTipoElemento,
-  );
-
-  // Anexa o rowId — a chave estável. É o que diferencia este sync do import
-  // por arquivo, e o que faz renomear um pai deixar de orfanar os filhos.
-  //
-  // A chave do mapa tem de incluir o GRUPO: `caminho_wbs` é único apenas
-  // dentro de um grupo macro. Indexar só pelo caminho fazia atividades de
-  // grupos diferentes casarem com a mesma linha da planilha e receberem o
-  // mesmo rowId — o índice único do banco pegou isso na primeira execução.
-  const chave = (grupoId: string, caminho: string) => `${grupoId}::${caminho}`;
-  const porGrupoECaminho = new Map<string, string>();
-  for (const atividade of resultado.atividades) {
-    const grupoId = idPorGrupo.get(atividade.grupoMacroSmartsheet);
-    const rowId = rowIdPorLinha.get(atividade.linhaPlanilha);
-    if (!grupoId || !rowId) continue;
-    porGrupoECaminho.set(chave(grupoId, atividade.caminhoWbsTexto), rowId);
-  }
-
-  for (const item of payload) {
-    const rowId = porGrupoECaminho.get(chave(item.grupo_macro_id, item.caminho_wbs));
-    if (rowId) item.smartsheet_row_id = rowId;
-  }
-
-  const atribuidos = payload.map((p) => p.smartsheet_row_id).filter(Boolean);
-  const distintos = new Set(atribuidos).size;
-  console.log(`  rowId anexado a ${atribuidos.length}/${payload.length} atividades.`);
-  if (distintos !== atribuidos.length) {
-    // Rede de proteção: falhar aqui é muito melhor que gravar vínculo trocado.
-    console.error(
-      `\nERRO: ${atribuidos.length - distintos} rowId(s) repetido(s) no payload. ` +
-        'Isso significaria duas atividades apontando para a mesma linha do ' +
-        'Smartsheet. Nada foi gravado.\n',
-    );
-    process.exitCode = 1;
-    return;
-  }
-
-  if (semGrupo.length > 0) {
-    console.log(`  ! ${semGrupo.length} atividade(s) sem grupo correspondente — não gravadas.`);
-  }
-
-  const existentes = await buscarAtividadesExistentes(cliente, idPorGrupo);
-  const orfas = detectarOrfas(existentes, payload);
-  const gravadas = await upsertAtividades(cliente, payload);
-  console.log(`  atividades: ${gravadas} gravadas.`);
-
-  // Registro diário: é a única fonte da trajetória do cronograma.
-  const folhasDoDia = resultado.atividades.filter((a) => a.ehFolha);
-  await registrarHistoricoCronograma(
-    cliente,
-    projetoId,
-    new Date().toISOString().slice(0, 10),
-    {
-      dataInicioPlanejada: resultado.raiz.dataInicioPlanejada,
-      dataFimPlanejada: resultado.raiz.dataFimPlanejada,
-      percentualSmartsheet: resultado.raiz.percentualConcluido,
-      totalAtividades: folhasDoDia.length,
-      atividadesCriticas: resultado.atividades.filter((a) => a.caminhoCritico).length,
-      atividadesConcluidas: folhasDoDia.filter((a) => a.percentualConcluido >= 100).length,
-      origem: 'sync',
-    },
-  );
+  console.log(`  rowId anexado a ${relatorio.comRowId}/${relatorio.atividades} atividades.`);
+  console.log(`  atividades: ${relatorio.atividades} gravadas.`);
   console.log('  historico_cronograma: registro do dia gravado.');
 
   linha();
-  if (orfas.length === 0) {
+  if (relatorio.orfas.length === 0) {
     console.log('Nenhuma atividade órfã. O banco está alinhado com o Smartsheet.');
   } else {
-    console.log(`${orfas.length} atividade(s) órfã(s) — existem no banco e sumiram da planilha:`);
-    for (const o of orfas.slice(0, 15)) console.log(`  - ${o.caminhoWbs ?? o.nome}`);
-    console.log('\nNão foram apagadas. Confira se foram mesmo removidas do cronograma');
-    console.log('antes de limpar — renomear um pai também produz órfãs.');
+    console.log(`${relatorio.orfas.length} atividade(s) órfã(s) — no banco e ausentes da planilha:`);
+    for (const o of relatorio.orfas.slice(0, 15)) console.log(`  - ${o.caminhoWbs || o.nome}`);
+    console.log('\nNão foram apagadas. Renomear um pai também produz órfãs.');
   }
   linha();
   console.log('SYNC CONCLUÍDO.');
