@@ -172,6 +172,47 @@ export function Alert({
 }
 
 /* -------------------------------------------------------------------------- */
+/* Esqueleto de carregamento                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Bloco cinza-creme pulsante usado nos `loading.tsx` de cada rota.
+ *
+ * Como toda página deste app lê a sessão via `cookies()` (nada de
+ * cache/prerender possível), o Next só troca a tela quando o Server Component
+ * termina — sem `loading.tsx`, a navegação fica congelada. Este componente é
+ * só um espaço reservado visual: nunca representa um dado real, então não
+ * precisa (e não deve) vir de `lib/calculos/`.
+ */
+export function Skeleton({ className = '' }: { className?: string }) {
+  return <div aria-hidden="true" className={`animate-pulse rounded-lg bg-creme ${className}`} />;
+}
+
+/** Cabeçalho de página em modo esqueleto — espelha o layout de `PageHeading`. */
+export function PageHeadingSkeleton() {
+  return (
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-borda pb-3">
+      <div className="min-w-0">
+        <Skeleton className="h-7 w-56 sm:h-8" />
+        <Skeleton className="mt-2 h-4 w-72 max-w-full" />
+      </div>
+      <Skeleton className="h-6 w-24" />
+    </div>
+  );
+}
+
+/** Cartão de indicador em modo esqueleto — espelha o layout de `MetricCard`. */
+export function MetricCardSkeleton() {
+  return (
+    <Card className="relative overflow-hidden">
+      <Skeleton className="h-3 w-24" />
+      <Skeleton className="mt-3 h-7 w-16" />
+      <Skeleton className="mt-2 h-3 w-32" />
+    </Card>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Etiqueta                                                                   */
 /* -------------------------------------------------------------------------- */
 
