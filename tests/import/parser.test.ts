@@ -15,14 +15,31 @@ import fs from 'node:fs/promises';
 import ExcelJS from 'exceljs';
 
 import fixture from '../fixtures/cronograma-smartsheet.json';
-import { interpretarLinhas, paraBooleano, paraDataIso, paraDuracaoDias, paraPercentual, SEPARADOR_CAMINHO_WBS } from '@/scripts/import/parser';
+import {
+  interpretarLinhas,
+  NOME_RAIZ_ESCOPO,
+  paraBooleano,
+  paraDataIso,
+  paraDuracaoDias,
+  paraPercentual,
+  SEPARADOR_CAMINHO_WBS,
+} from '@/scripts/import/parser';
 import { lerLinhasBrutas } from '@/scripts/import/xlsx';
 import { inferirElementoVisual } from '@/scripts/import/mapeamento-elementos';
 import { montarResumo } from '@/scripts/import/resumo';
 import type { LinhaBruta } from '@/scripts/import/tipos';
 
+/**
+ * A fixture recorta um trecho do macro-cronograma corporativo real da EEE
+ * Novo Mundo — os testes abaixo continuam exercitando o comportamento COM
+ * poda de ramo (`nomeRaizEscopo`) e COM a regra real de vínculo de elemento
+ * visual, exatamente como `lib/smartsheet/config-dispositivos.ts` configura
+ * para este dispositivo em produção.
+ */
+const OPCOES_NOVO_MUNDO = { nomeRaizEscopo: NOME_RAIZ_ESCOPO, inferirElementoVisual };
+
 const linhas = fixture as unknown as LinhaBruta[];
-const resultado = interpretarLinhas(linhas);
+const resultado = interpretarLinhas(linhas, OPCOES_NOVO_MUNDO);
 
 describe('filtro de escopo — só o ramo "E.E.E. - NOVO MUNDO"', () => {
   it('descarta o macro-cronograma corporativo e os ramos vizinhos', () => {
@@ -49,7 +66,7 @@ describe('filtro de escopo — só o ramo "E.E.E. - NOVO MUNDO"', () => {
     const semRamo = linhas.filter(
       (l) => String(l.celulas.atividade ?? '').indexOf('E.E.E.') === -1,
     );
-    expect(() => interpretarLinhas(semRamo)).toThrow(/não encontrado/i);
+    expect(() => interpretarLinhas(semRamo, OPCOES_NOVO_MUNDO)).toThrow(/não encontrado/i);
   });
 
   it('ignora a linha crítica que está fora de escopo na contagem de críticas', () => {
@@ -331,7 +348,7 @@ describe('leitura do arquivo .xlsx (camada de I/O)', () => {
     expect(brutas[0].celulas.nivel).toBe(0);
     expect(brutas[0].celulas.iniciar).toBeInstanceOf(Date);
 
-    const interpretado = interpretarLinhas(brutas);
+    const interpretado = interpretarLinhas(brutas, OPCOES_NOVO_MUNDO);
     expect(interpretado.grupos.map((g) => g.nomeSmartsheet)).toEqual(['SERVIÇOS PRELIMINARES']);
     expect(interpretado.atividades).toHaveLength(1);
     expect(interpretado.atividades[0].dataInicioPlanejada).toBe('2026-07-27');
@@ -341,5 +358,89 @@ describe('leitura do arquivo .xlsx (camada de I/O)', () => {
   it('falha com mensagem clara se o cabeçalho obrigatório sumir', async () => {
     const arquivo = await gerarArquivoTemporario(['Tarefa', 'Profundidade', 'Pct', 'Dur', 'Ini']);
     await expect(lerLinhasBrutas(arquivo)).rejects.toThrow(/Colunas obrigatórias/);
+  });
+});
+
+/**
+ * Helper para montar `LinhaBruta` sintéticas sem passar por .xlsx/API —
+ * exercita só o comportamento de `interpretarLinhas`, independente de fonte.
+ */
+function linhaSintetica(
+  linhaPlanilha: number,
+  nivel: number,
+  atividade: string,
+  extras: Partial<LinhaBruta['celulas']> = {},
+): LinhaBruta {
+  return {
+    linhaPlanilha,
+    celulas: { nivel, atividade, ...extras } as LinhaBruta['celulas'],
+  };
+}
+
+describe('opções — planilha dedicada (sem nomeRaizEscopo)', () => {
+  // Caso da maioria dos dispositivos da UDE: a planilha já é o cronograma
+  // inteiro do dispositivo, sem ramo corporativo a podar (ver
+  // lib/smartsheet/config-dispositivos.ts).
+  const linhasPlanilhaDedicada: LinhaBruta[] = [
+    linhaSintetica(2, 1, 'FASE A', { percentualConcluida: 0.5 }),
+    linhaSintetica(3, 2, 'Atividade 1'),
+    linhaSintetica(4, 1, 'FASE B'),
+    linhaSintetica(5, 2, 'Atividade 2'),
+  ];
+
+  it('importa a planilha inteira sem procurar nem exigir uma linha-raiz', () => {
+    const resultado = interpretarLinhas(linhasPlanilhaDedicada);
+    expect(resultado.grupos.map((g) => g.nomeSmartsheet)).toEqual(['FASE A', 'FASE B']);
+    expect(resultado.atividades.map((a) => a.nome)).toEqual(['Atividade 1', 'Atividade 2']);
+    expect(resultado.linhasForaDeEscopo).toBe(0);
+  });
+
+  it('não lança mesmo sem nenhuma linha parecida com um nome de escopo', () => {
+    expect(() => interpretarLinhas(linhasPlanilhaDedicada)).not.toThrow();
+  });
+
+  it('não tem uma linha física de raiz: percentual fica null e as datas vêm das atividades', () => {
+    const comDatas: LinhaBruta[] = [
+      linhaSintetica(2, 1, 'FASE A'),
+      linhaSintetica(3, 2, 'Atividade 1', {
+        iniciar: new Date(Date.UTC(2026, 0, 10)),
+        terminar: new Date(Date.UTC(2026, 0, 20)),
+      }),
+    ];
+    const resultado = interpretarLinhas(comDatas);
+    expect(resultado.raiz.percentualConcluido).toBeNull();
+    expect(resultado.raiz.dataInicioPlanejada).toBe('2026-01-10');
+    expect(resultado.raiz.dataFimPlanejada).toBe('2026-01-20');
+  });
+
+  it('nível mais alto presente na planilha vira grupo macro, mesmo não sendo nível 1', () => {
+    // Algumas planilhas dedicadas começam no nível 0, outras no nível 1 — o
+    // parser não assume um número fixo, só "o menor nível presente".
+    const comecandoEmZero: LinhaBruta[] = [
+      linhaSintetica(2, 0, 'Fase única'),
+      linhaSintetica(3, 1, 'Atividade única'),
+    ];
+    const resultado = interpretarLinhas(comecandoEmZero);
+    expect(resultado.grupos.map((g) => g.nomeSmartsheet)).toEqual(['Fase única']);
+    expect(resultado.atividades.map((a) => a.nome)).toEqual(['Atividade única']);
+  });
+});
+
+describe('opções — sem inferirElementoVisual (dispositivo sem mapeamento próprio)', () => {
+  it('nunca trava o import: todas as atividades ficam com tipoElementoVisual null', () => {
+    // Mesma fixture da Novo Mundo, mas sem injetar a regra real de vínculo —
+    // simula um dispositivo sem `config-dispositivos.ts` próprio.
+    const semRegra = interpretarLinhas(linhas, { nomeRaizEscopo: NOME_RAIZ_ESCOPO });
+    expect(semRegra.atividades.length).toBeGreaterThan(0);
+    expect(semRegra.atividades.every((a) => a.tipoElementoVisual === null)).toBe(true);
+  });
+
+  it('o default vale também sem nenhuma opção (planilha dedicada + sem regra)', () => {
+    const linhasPlanilhaDedicada: LinhaBruta[] = [
+      linhaSintetica(2, 1, 'FASE A'),
+      linhaSintetica(3, 2, 'Fosso de sucção'), // casaria com poco_umido se houvesse regra
+    ];
+    const resultado = interpretarLinhas(linhasPlanilhaDedicada);
+    expect(resultado.atividades[0].tipoElementoVisual).toBeNull();
   });
 });

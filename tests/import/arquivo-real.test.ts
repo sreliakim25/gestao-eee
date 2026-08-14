@@ -18,8 +18,9 @@ import path from 'node:path';
 import { existsSync } from 'node:fs';
 
 import { parsearCronograma } from '@/scripts/import/xlsx';
-import { chaveAtividade, montarPayloadAtividades } from '@/scripts/import/upsert';
+import { chaveAtividade, montarPayloadAtividades, NOME_PROJETO } from '@/scripts/import/upsert';
 import { montarResumo, NUMEROS_ESPERADOS } from '@/scripts/import/resumo';
+import { obterConfiguracaoDispositivo } from '@/lib/smartsheet/config-dispositivos';
 import type { ResultadoParse } from '@/scripts/import/tipos';
 import type { AtividadeInsert, TipoElementoVisual } from '@/types/database';
 
@@ -49,7 +50,7 @@ describe('arquivo real do Smartsheet', () => {
       `"${CAMINHO_XLSX}" não encontrado — é a fonte da verdade do cronograma.`,
     ).toBe(true);
 
-    resultado = await parsearCronograma(CAMINHO_XLSX);
+    resultado = await parsearCronograma(CAMINHO_XLSX, obterConfiguracaoDispositivo(NOME_PROJETO));
     const idPorGrupo = new Map(
       resultado.grupos.map((g, i) => [g.nomeSmartsheet, `grupo-${i + 1}`]),
     );
@@ -122,7 +123,7 @@ describe('arquivo real do Smartsheet', () => {
   });
 
   it('IDEMPOTÊNCIA: reparsear o arquivo real gera payload idêntico', async () => {
-    const outro = await parsearCronograma(CAMINHO_XLSX);
+    const outro = await parsearCronograma(CAMINHO_XLSX, obterConfiguracaoDispositivo(NOME_PROJETO));
     const idPorGrupo = new Map(outro.grupos.map((g, i) => [g.nomeSmartsheet, `grupo-${i + 1}`]));
     const outrasLinhas = montarPayloadAtividades(
       outro.atividades,

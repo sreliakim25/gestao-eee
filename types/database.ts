@@ -65,6 +65,34 @@ export type FaixaProgresso = 'nao_iniciado' | 'em_andamento' | 'concluido';
 export type Database = {
   public: {
     Tables: {
+      ugbs: {
+        Row: {
+          id: string;
+          nome: string;
+          sigla: string;
+          ordem: number;
+          criado_em: string;
+          atualizado_em: string;
+        };
+        Insert: {
+          id?: string;
+          nome: string;
+          sigla: string;
+          ordem?: number;
+          criado_em?: string;
+          atualizado_em?: string;
+        };
+        Update: {
+          id?: string;
+          nome?: string;
+          sigla?: string;
+          ordem?: number;
+          criado_em?: string;
+          atualizado_em?: string;
+        };
+        Relationships: [];
+      };
+
       perfis: {
         Row: {
           id: string;
@@ -102,6 +130,8 @@ export type Database = {
       projetos: {
         Row: {
           id: string;
+          /** UGB (Unidade de Gestão de Bacia) do dispositivo. NULL até o seed multi-dispositivo atribuir uma. */
+          ugb_id: string | null;
           nome: string;
           cliente: string | null;
           data_inicio_planejada: string | null;
@@ -109,13 +139,20 @@ export type Database = {
           /** Rollup da linha raiz do Smartsheet (0–100). Percentual OFICIAL. */
           percentual_smartsheet: number | null;
           percentual_smartsheet_em: string | null;
+          /** LEGADO: id da planilha principal. Ver projeto_planilhas_smartsheet. */
           smartsheet_sheet_id: string | null;
+          /** LEGADO: último sync da planilha principal. Ver projeto_planilhas_smartsheet. */
           smartsheet_sincronizado_em: string | null;
+          /** true = aba Concretagem aparece para este dispositivo. */
+          modulo_concretagem_habilitado: boolean;
+          /** true = aba Orçamento aparece para este dispositivo. */
+          modulo_orcamento_habilitado: boolean;
           criado_em: string;
           atualizado_em: string;
         };
         Insert: {
           id?: string;
+          ugb_id?: string | null;
           nome: string;
           cliente?: string | null;
           data_inicio_planejada?: string | null;
@@ -124,11 +161,14 @@ export type Database = {
           percentual_smartsheet_em?: string | null;
           smartsheet_sheet_id?: string | null;
           smartsheet_sincronizado_em?: string | null;
+          modulo_concretagem_habilitado?: boolean;
+          modulo_orcamento_habilitado?: boolean;
           criado_em?: string;
           atualizado_em?: string;
         };
         Update: {
           id?: string;
+          ugb_id?: string | null;
           nome?: string;
           cliente?: string | null;
           data_inicio_planejada?: string | null;
@@ -137,10 +177,61 @@ export type Database = {
           percentual_smartsheet_em?: string | null;
           smartsheet_sheet_id?: string | null;
           smartsheet_sincronizado_em?: string | null;
+          modulo_concretagem_habilitado?: boolean;
+          modulo_orcamento_habilitado?: boolean;
           criado_em?: string;
           atualizado_em?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'projetos_ugb_id_fkey';
+            columns: ['ugb_id'];
+            referencedRelation: 'ugbs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
+      projeto_planilhas_smartsheet: {
+        Row: {
+          id: string;
+          projeto_id: string;
+          sheet_id: string;
+          /** Ex.: 'principal', 'RAP', 'REL'. "principal" dita o rollup de % e as datas do dispositivo. */
+          papel: string;
+          ativo: boolean;
+          ultimo_sincronizado_em: string | null;
+          criado_em: string;
+          atualizado_em: string;
+        };
+        Insert: {
+          id?: string;
+          projeto_id: string;
+          sheet_id: string;
+          papel?: string;
+          ativo?: boolean;
+          ultimo_sincronizado_em?: string | null;
+          criado_em?: string;
+          atualizado_em?: string;
+        };
+        Update: {
+          id?: string;
+          projeto_id?: string;
+          sheet_id?: string;
+          papel?: string;
+          ativo?: boolean;
+          ultimo_sincronizado_em?: string | null;
+          criado_em?: string;
+          atualizado_em?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'projeto_planilhas_smartsheet_projeto_id_fkey';
+            columns: ['projeto_id'];
+            referencedRelation: 'projetos';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       grupos_macro: {
@@ -190,6 +281,8 @@ export type Database = {
       elementos_visuais: {
         Row: {
           id: string;
+          /** Dispositivo (projeto) a que o elemento visual pertence. */
+          projeto_id: string;
           nome: string;
           tipo: TipoElementoVisual;
           svg_path_id: string;
@@ -200,6 +293,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          projeto_id: string;
           nome: string;
           tipo: TipoElementoVisual;
           svg_path_id: string;
@@ -210,6 +304,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          projeto_id?: string;
           nome?: string;
           tipo?: TipoElementoVisual;
           svg_path_id?: string;
@@ -218,7 +313,14 @@ export type Database = {
           criado_em?: string;
           atualizado_em?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'elementos_visuais_projeto_id_fkey';
+            columns: ['projeto_id'];
+            referencedRelation: 'projetos';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       historico_cronograma: {
@@ -474,6 +576,8 @@ export type Database = {
       fotos_evidencia: {
         Row: {
           id: string;
+          /** Dispositivo (projeto) a que a foto pertence — vínculo direto, evita resolver via diario/atividade/elemento. */
+          projeto_id: string;
           diario_obra_id: string | null;
           atividade_id: string | null;
           elemento_visual_id: string | null;
@@ -484,6 +588,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          projeto_id: string;
           diario_obra_id?: string | null;
           atividade_id?: string | null;
           elemento_visual_id?: string | null;
@@ -494,6 +599,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          projeto_id?: string;
           diario_obra_id?: string | null;
           atividade_id?: string | null;
           elemento_visual_id?: string | null;
@@ -503,6 +609,12 @@ export type Database = {
           criado_em?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: 'fotos_evidencia_projeto_id_fkey';
+            columns: ['projeto_id'];
+            referencedRelation: 'projetos';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'fotos_evidencia_diario_obra_id_fkey';
             columns: ['diario_obra_id'];
@@ -533,6 +645,8 @@ export type Database = {
       concretagem_pedidos: {
         Row: {
           id: string;
+          /** Dispositivo (projeto) a que o pedido de concreto pertence. */
+          projeto_id: string;
           etapa: number;
           elementos: string[];
           elemento_visual_id: string | null;
@@ -550,6 +664,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          projeto_id: string;
           etapa: number;
           elementos?: string[];
           elemento_visual_id?: string | null;
@@ -567,6 +682,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          projeto_id?: string;
           etapa?: number;
           elementos?: string[];
           elemento_visual_id?: string | null;
@@ -584,6 +700,12 @@ export type Database = {
         };
         Relationships: [
           {
+            foreignKeyName: 'concretagem_pedidos_projeto_id_fkey';
+            columns: ['projeto_id'];
+            referencedRelation: 'projetos';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'concretagem_pedidos_elemento_visual_id_fkey';
             columns: ['elemento_visual_id'];
             referencedRelation: 'elementos_visuais';
@@ -595,6 +717,8 @@ export type Database = {
       orcamento_itens: {
         Row: {
           id: string;
+          /** Dispositivo (projeto) a que o item de orçamento pertence. */
+          projeto_id: string;
           item_codigo: string;
           descricao: string;
           unidade: string | null;
@@ -611,6 +735,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          projeto_id: string;
           item_codigo: string;
           descricao: string;
           unidade?: string | null;
@@ -625,6 +750,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          projeto_id?: string;
           item_codigo?: string;
           descricao?: string;
           unidade?: string | null;
@@ -637,7 +763,14 @@ export type Database = {
           criado_em?: string;
           atualizado_em?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'orcamento_itens_projeto_id_fkey';
+            columns: ['projeto_id'];
+            referencedRelation: 'projetos';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
 
@@ -655,6 +788,8 @@ export type Database = {
           percentual_concluido: number;
           percentual_ponderado_duracao: number;
           faixa_progresso: FaixaProgresso;
+          /** Ao final da lista: CREATE OR REPLACE VIEW só permite acrescentar colunas no fim. */
+          projeto_id: string;
         };
         Relationships: [];
       };
@@ -688,6 +823,8 @@ export type Database = {
           valor_medido_mao_de_obra: number;
           valor_compra_direta: number;
           valor_medido_compra_direta: number;
+          /** Ao final da lista: CREATE OR REPLACE VIEW só permite acrescentar colunas no fim. */
+          projeto_id: string;
         };
         Relationships: [];
       };
@@ -736,7 +873,9 @@ type Tabelas = Database['public']['Tables'];
 type Visoes = Database['public']['Views'];
 
 export type PerfilUsuario = Tabelas['perfis']['Row'];
+export type Ugb = Tabelas['ugbs']['Row'];
 export type Projeto = Tabelas['projetos']['Row'];
+export type ProjetoPlanilhaSmartsheet = Tabelas['projeto_planilhas_smartsheet']['Row'];
 export type GrupoMacro = Tabelas['grupos_macro']['Row'];
 export type ElementoVisual = Tabelas['elementos_visuais']['Row'];
 export type PerfilUsuarioUpdate = Tabelas['perfis']['Update'];
@@ -762,6 +901,9 @@ export type DiarioObraInsert = Tabelas['diario_obra']['Insert'];
 export type FotoEvidenciaInsert = Tabelas['fotos_evidencia']['Insert'];
 export type ConcretagemPedidoInsert = Tabelas['concretagem_pedidos']['Insert'];
 export type OrcamentoItemInsert = Tabelas['orcamento_itens']['Insert'];
+export type UgbInsert = Tabelas['ugbs']['Insert'];
+export type ProjetoInsert = Tabelas['projetos']['Insert'];
+export type ProjetoPlanilhaSmartsheetInsert = Tabelas['projeto_planilhas_smartsheet']['Insert'];
 
 /** Volume mínimo de concreto por pedido, em m³ (espelha a constraint do banco). */
 export const VOLUME_MINIMO_CONCRETO_M3 = 5;

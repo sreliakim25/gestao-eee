@@ -25,7 +25,10 @@ import {
   buscarPlanilha,
   listarPlanilhas,
 } from './import/smartsheet-api';
-import { ErroSync, sincronizarCronograma } from '@/lib/smartsheet/sincronizar';
+import { NOME_PROJETO, buscarProjetoId } from './import/upsert';
+import { obterConfiguracaoDispositivo } from '@/lib/smartsheet/config-dispositivos';
+import { ErroSync, sincronizarPlanilhaPrincipal } from '@/lib/smartsheet/sincronizar';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 config({ path: '.env.local', quiet: true });
 
@@ -59,7 +62,7 @@ async function main(): Promise<void> {
 
   const sheetId = process.env.SMARTSHEET_SHEET_ID ?? '';
   const { linhas, planilha } = await buscarPlanilha(token, sheetId);
-  const resultado = interpretarLinhas(linhas);
+  const resultado = interpretarLinhas(linhas, obterConfiguracaoDispositivo(NOME_PROJETO));
 
   linha();
   console.log(`PLANILHA: ${planilha.nome}  (id ${sheetId})`);
@@ -85,12 +88,14 @@ async function main(): Promise<void> {
   }
 
   // ---- escrita ------------------------------------------------------------
-  // Delega a `sincronizarCronograma()`, o MESMO caminho que o botão da tela e
-  // o cron usam. Duplicar a orquestração aqui faria o CLI divergir do app na
+  // Delega a `sincronizarPlanilhaPrincipal()`, o MESMO caminho que o botão da
+  // tela usa. Duplicar a orquestração aqui faria o CLI divergir do app na
   // primeira correção aplicada só de um lado.
   let relatorio;
   try {
-    relatorio = await sincronizarCronograma();
+    const cliente = createAdminClient();
+    const projetoId = await buscarProjetoId(cliente, NOME_PROJETO);
+    relatorio = await sincronizarPlanilhaPrincipal(projetoId);
   } catch (erro) {
     if (erro instanceof ErroSync && erro.codigo === 'config') {
       console.error(`\nERRO: ${erro.message}\n`);

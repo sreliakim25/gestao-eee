@@ -27,6 +27,9 @@ import {
   type PlanilhaLike,
 } from '@/scripts/import-orcamento';
 
+/** Id fictício: os testes não tocam no banco, só na montagem do payload. */
+const PROJETO_ID_TESTE = '00000000-0000-4000-8000-000000000099';
+
 /** Observação literal usada na planilha para marcar o concreto de compra direta. */
 const OBS_COMPRA_DIRETA =
   'Considerar o custo de mão de obra e o concreto será tratado como compra direta ' +
@@ -127,7 +130,7 @@ describe('separarFolhas — evita dobrar o orçamento', () => {
       linha({ itemCodigo: '1.3', valorTotal: 20000 }),
       linha({ itemCodigo: '1.4', valorTotal: 16983 }),
     ];
-    const { itens } = montarItens(linhas);
+    const { itens } = montarItens(linhas, PROJETO_ID_TESTE);
     expect(calcularTotais(itens).totalGeral).toBe(52983);
   });
 });
@@ -140,19 +143,25 @@ describe('REGRA CRÍTICA — concreto é compra direta, nunca soma à mão de ob
   });
 
   it('marca eh_compra_direta = true no item de concreto e false nos demais', () => {
-    const { itens } = montarItens([
-      linha({ itemCodigo: '2.2.2.1', descricao: 'PAREDES, LAJES E ESCADA', valorTotal: 76446, observacoes: OBS_COMPRA_DIRETA }),
-      linha({ itemCodigo: '2.2.3.3', descricao: 'PAREDES (fôrma)', valorTotal: 80678.58, observacoes: OBS_MAO_DE_OBRA }),
-    ]);
+    const { itens } = montarItens(
+      [
+        linha({ itemCodigo: '2.2.2.1', descricao: 'PAREDES, LAJES E ESCADA', valorTotal: 76446, observacoes: OBS_COMPRA_DIRETA }),
+        linha({ itemCodigo: '2.2.3.3', descricao: 'PAREDES (fôrma)', valorTotal: 80678.58, observacoes: OBS_MAO_DE_OBRA }),
+      ],
+      PROJETO_ID_TESTE,
+    );
     expect(itens.find((i) => i.item_codigo === '2.2.2.1')?.eh_compra_direta).toBe(true);
     expect(itens.find((i) => i.item_codigo === '2.2.3.3')?.eh_compra_direta).toBe(false);
   });
 
   it('o total de mão de obra NÃO inclui o concreto de compra direta', () => {
-    const { itens } = montarItens([
-      linha({ itemCodigo: '2.2.2.1', descricao: 'PAREDES, LAJES E ESCADA', valorTotal: 76446, observacoes: OBS_COMPRA_DIRETA }),
-      linha({ itemCodigo: '2.2.3.3', descricao: 'PAREDES (fôrma)', valorTotal: 80678.58, observacoes: OBS_MAO_DE_OBRA }),
-    ]);
+    const { itens } = montarItens(
+      [
+        linha({ itemCodigo: '2.2.2.1', descricao: 'PAREDES, LAJES E ESCADA', valorTotal: 76446, observacoes: OBS_COMPRA_DIRETA }),
+        linha({ itemCodigo: '2.2.3.3', descricao: 'PAREDES (fôrma)', valorTotal: 80678.58, observacoes: OBS_MAO_DE_OBRA }),
+      ],
+      PROJETO_ID_TESTE,
+    );
     const totais = calcularTotais(itens);
 
     expect(totais.totalCompraDireta).toBe(76446);
@@ -163,11 +172,14 @@ describe('REGRA CRÍTICA — concreto é compra direta, nunca soma à mão de ob
   });
 
   it('separa mão de obra x compra direta por categoria', () => {
-    const { itens } = montarItens([
-      linha({ itemCodigo: '4.2.2.1', descricao: 'SAPATAS', valorTotal: 1523.2, observacoes: OBS_COMPRA_DIRETA }),
-      linha({ itemCodigo: '4.2.3.1', descricao: 'SAPATAS (fôrma)', valorTotal: 1152, observacoes: OBS_MAO_DE_OBRA }),
-      linha({ itemCodigo: '5.2.2.1', descricao: 'SAPATAS muro', valorTotal: 2876.4, observacoes: OBS_COMPRA_DIRETA }),
-    ]);
+    const { itens } = montarItens(
+      [
+        linha({ itemCodigo: '4.2.2.1', descricao: 'SAPATAS', valorTotal: 1523.2, observacoes: OBS_COMPRA_DIRETA }),
+        linha({ itemCodigo: '4.2.3.1', descricao: 'SAPATAS (fôrma)', valorTotal: 1152, observacoes: OBS_MAO_DE_OBRA }),
+        linha({ itemCodigo: '5.2.2.1', descricao: 'SAPATAS muro', valorTotal: 2876.4, observacoes: OBS_COMPRA_DIRETA }),
+      ],
+      PROJETO_ID_TESTE,
+    );
     const { porCategoria } = calcularTotais(itens);
 
     expect(porCategoria.casa_comando).toMatchObject({ maoDeObra: 1152, compraDireta: 1523.2, itens: 2 });
@@ -177,27 +189,44 @@ describe('REGRA CRÍTICA — concreto é compra direta, nunca soma à mão de ob
 
 describe('montarItens', () => {
   it('ignora linha sem descrição (itens omissos em branco) sem quebrar', () => {
-    const { itens, semDescricao } = montarItens([
-      linha({ itemCodigo: '7', descricao: 'ITENS OMISSOS' }),
-      linha({ itemCodigo: '7.1', descricao: '' }),
-    ]);
+    const { itens, semDescricao } = montarItens(
+      [
+        linha({ itemCodigo: '7', descricao: 'ITENS OMISSOS' }),
+        linha({ itemCodigo: '7.1', descricao: '' }),
+      ],
+      PROJETO_ID_TESTE,
+    );
     expect(itens).toHaveLength(0);
     expect(semDescricao).toHaveLength(1);
   });
 
   it('desambigua código duplicado (o UNIQUE do banco é por item_codigo)', () => {
-    const { itens, duplicados } = montarItens([
-      linha({ itemCodigo: '4.4.7', descricao: 'Cobogó (elemento vazado) de concreto', valorTotal: 250 }),
-      linha({ itemCodigo: '4.4.7', descricao: 'Caiação em parede externa', valorTotal: 1351.05 }),
-    ]);
+    const { itens, duplicados } = montarItens(
+      [
+        linha({ itemCodigo: '4.4.7', descricao: 'Cobogó (elemento vazado) de concreto', valorTotal: 250 }),
+        linha({ itemCodigo: '4.4.7', descricao: 'Caiação em parede externa', valorTotal: 1351.05 }),
+      ],
+      PROJETO_ID_TESTE,
+    );
     expect(itens.map((i) => i.item_codigo)).toEqual(['4.4.7', '4.4.7#2']);
     expect(duplicados).toHaveLength(1);
     expect(new Set(itens.map((i) => i.item_codigo)).size).toBe(itens.length);
   });
 
   it('não envia valor_medido — o upsert não pode zerar a medição já lançada', () => {
-    const { itens } = montarItens([linha({ itemCodigo: '1.1', descricao: 'Mobilização', valorTotal: 6000 })]);
+    const { itens } = montarItens(
+      [linha({ itemCodigo: '1.1', descricao: 'Mobilização', valorTotal: 6000 })],
+      PROJETO_ID_TESTE,
+    );
     expect(itens[0]).not.toHaveProperty('valor_medido');
+  });
+
+  it('inclui projeto_id em todo item — chave do upsert desde que orcamento_itens ganhou a coluna', () => {
+    const { itens } = montarItens(
+      [linha({ itemCodigo: '1.1', descricao: 'Mobilização', valorTotal: 6000 })],
+      PROJETO_ID_TESTE,
+    );
+    expect(itens[0].projeto_id).toBe(PROJETO_ID_TESTE);
   });
 
   it('é determinístico (idempotência do upsert)', () => {
@@ -205,11 +234,16 @@ describe('montarItens', () => {
       linha({ itemCodigo: '1.1', descricao: 'Mobilização', valorTotal: 6000 }),
       linha({ itemCodigo: '1.2', descricao: 'Canteiro', valorTotal: 10000 }),
     ];
-    expect(montarItens(linhas).itens).toEqual(montarItens(linhas).itens);
+    expect(montarItens(linhas, PROJETO_ID_TESTE).itens).toEqual(
+      montarItens(linhas, PROJETO_ID_TESTE).itens,
+    );
   });
 
   it('avisa quando há item com valor zerado', () => {
-    const { avisos } = montarItens([linha({ itemCodigo: '2.3.2', descricao: 'TUBO FoFo', valorTotal: 0 })]);
+    const { avisos } = montarItens(
+      [linha({ itemCodigo: '2.3.2', descricao: 'TUBO FoFo', valorTotal: 0 })],
+      PROJETO_ID_TESTE,
+    );
     expect(avisos.join(' ')).toMatch(/valor_total = 0/);
   });
 });

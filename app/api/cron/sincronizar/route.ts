@@ -1,5 +1,5 @@
 /**
- * GET /api/cron/sincronizar — sync agendado (Vercel Cron).
+ * GET /api/cron/sincronizar — sync agendado (Vercel Cron), TODOS os dispositivos.
  *
  * Garante o registro diário do cronograma mesmo que ninguém abra o app. É o
  * que faz `historico_cronograma` virar uma série de verdade em vez de uma
@@ -10,15 +10,22 @@
  * conferir isso, qualquer pessoa na internet dispararia o sync com um GET.
  *
  * Agendamento em `vercel.json`. Fora da Vercel, o mesmo efeito se obtém com
- * `npm run smartsheet:sync -- --apply` num cron do sistema.
+ * `npm run smartsheet:sync -- --apply` num cron do sistema (só cobre a Novo
+ * Mundo — para todos os dispositivos, chamar esta rota mesmo).
  */
 
 import { NextResponse } from 'next/server';
-import { ErroSync, sincronizarCronograma } from '@/lib/smartsheet/sincronizar';
-import { ErroSmartsheet } from '@/scripts/import/smartsheet-api';
+import { ErroSync, sincronizarTodosDispositivos } from '@/lib/smartsheet/sincronizar';
 
-/** Sync pode passar de 10s; o padrão da Vercel derrubaria no meio. */
-export const maxDuration = 60;
+/**
+ * `sincronizarTodosDispositivos` itera SEQUENCIALMENTE (uma chamada à API do
+ * Smartsheet por vez, para respeitar o rate limit) por dispositivo × planilha
+ * ativa. Com ~8 dispositivos confirmados e poucas planilhas cada, o padrão de
+ * 10s da Vercel já não bastava com um dispositivo só; 60s também fica curto
+ * quando o lote cresce. 120s dá folga sem exagerar — se o número de planilhas
+ * ativas crescer muito, este valor precisa ser revisto de novo.
+ */
+export const maxDuration = 120;
 
 export async function GET(request: Request) {
   const segredo = process.env.CRON_SECRET;
@@ -33,21 +40,39 @@ export async function GET(request: Request) {
   }
 
   try {
-    const resultado = await sincronizarCronograma();
-    console.log(
-      `[cron] sync ok: ${resultado.atividades} atividades, ${resultado.percentualSmartsheet}%, ` +
-        `término ${resultado.dataFimPlanejada}, ${resultado.orfas.length} órfã(s).`,
-    );
+    const relatorio = await sincronizarTodosDispositivos();
+    const sucesso = relatorio.filter((item) => item.ok);
+    const falhas = relatorio.filter((item) => !item.ok);
+
+    for (const item of sucesso) {
+      console.log(
+        `[cron] sync ok "${item.nomeProjeto}" (sheet ${item.sheetId}, papel ${item.papel}): ` +
+          `${item.resultado?.atividades} atividades, ${item.resultado?.percentualSmartsheet}%, ` +
+          `término ${item.resultado?.dataFimPlanejada}, ${item.resultado?.orfas.length ?? 0} órfã(s).`,
+      );
+    }
+    for (const item of falhas) {
+      // Isolamento de falha: uma planilha com erro é logada e reportada, mas
+      // NUNCA impede as demais de rodar (ver sincronizarTodosDispositivos).
+      console.error(`[cron] falha em "${item.nomeProjeto}" (sheet ${item.sheetId}): ${item.erro}`);
+    }
+
     return NextResponse.json({
-      ok: true,
-      atividades: resultado.atividades,
-      percentual: resultado.percentualSmartsheet,
-      dataFimPlanejada: resultado.dataFimPlanejada,
-      orfas: resultado.orfas.length,
+      ok: falhas.length === 0,
+      totalPlanilhas: relatorio.length,
+      sucesso: sucesso.length,
+      falhas: falhas.map((item) => ({
+        nomeProjeto: item.nomeProjeto,
+        sheetId: item.sheetId,
+        papel: item.papel,
+        erro: item.erro,
+      })),
     });
   } catch (erro) {
-    const tratado = erro instanceof ErroSync || erro instanceof ErroSmartsheet;
-    console.error('[cron] falha no sync:', tratado ? (erro as Error).message : erro);
+    // Chega aqui só se a PRÓPRIA listagem de planilhas ativas falhar (ex.:
+    // banco fora do ar) — falha de UMA planilha nunca cai neste catch.
+    const tratado = erro instanceof ErroSync;
+    console.error('[cron] falha ao listar planilhas ativas:', tratado ? (erro as Error).message : erro);
     return NextResponse.json(
       { ok: false, erro: tratado ? (erro as Error).message : 'Falha no sync agendado.' },
       { status: 502 },

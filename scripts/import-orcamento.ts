@@ -19,9 +19,10 @@
  *    e é contabilizada no relatório.
  *  - Importa apenas as FOLHAS do orçamento sintético (itens sem subitem), senão
  *    os totalizadores (1., 2.1, 2.2...) dobrariam o somatório.
- *  - Idempotente: upsert por `item_codigo` (unique no banco) e payload
- *    determinístico. `valor_medido` NÃO é enviado, para não zerar a medição já
- *    lançada no app.
+ *  - Idempotente: upsert por `(projeto_id, item_codigo)` (unique no banco desde
+ *    que `orcamento_itens` ganhou `projeto_id` — cada dispositivo tem sua
+ *    própria codificação de item) e payload determinístico. `valor_medido` NÃO
+ *    é enviado, para não zerar a medição já lançada no app.
  *  - Confere o somatório contra R$ 736.324,27 e avisa EM DESTAQUE se divergir.
  *
  * Não usa a lib `xlsx` da npm (CVEs conhecidos) — usa `exceljs`, carregada
@@ -31,6 +32,7 @@
 import process from 'node:process';
 import { config as carregarEnv } from 'dotenv';
 import { CATEGORIA_POR_RAIZ, ORDEM_CATEGORIAS, ROTULO_CATEGORIA } from '@/app/orcamento/categorias';
+import { NOME_PROJETO, buscarProjetoId } from '@/scripts/import/upsert';
 import type { CategoriaOrcamento, OrcamentoItemInsert } from '@/types/database';
 
 /* -------------------------------------------------------------------------- */
@@ -39,6 +41,15 @@ import type { CategoriaOrcamento, OrcamentoItemInsert } from '@/types/database';
 
 export const CAMINHO_PADRAO_XLSX = 'Materiais/QUANTITATIVO ESTAÇÃO ELEVATÓRIA DE ESGOTO RL.xlsx';
 export const NOME_ABA_ORCAMENTO = 'ORÇAMENTO';
+
+/**
+ * Placeholder de `projeto_id` usado em dry-run (sem tocar no banco): o dry-run
+ * deste script continua 100% offline (só lê o .xlsx), então não resolve o id
+ * real via `buscarProjetoId`. NUNCA é gravado — a etapa de escrita nem roda em
+ * dry-run — só existe para satisfazer o tipo do payload (`orcamento_itens.projeto_id`
+ * é `NOT NULL`).
+ */
+export const PROJETO_ID_DRY_RUN = '00000000-0000-0000-0000-000000000000';
 
 /** Total contratado do terceirizado, conforme a linha "TOTAL DO SERVIÇO:". */
 export const TOTAL_CONTRATADO_ESPERADO = 736324.27;
@@ -230,10 +241,15 @@ export function separarFolhas(linhas: readonly LinhaOrcamento[]): {
 /**
  * Monta os itens para o banco.
  *
- * Determinístico (mesma planilha → mesmo payload, mesma ordem), o que garante
- * a idempotência do upsert.
+ * Determinístico (mesma planilha + mesmo `projetoId` → mesmo payload, mesma
+ * ordem), o que garante a idempotência do upsert.
+ *
+ * `projetoId` é obrigatório desde que `orcamento_itens.projeto_id` passou a
+ * existir (migration `20260813100400_concretagem_orcamento_projeto.sql`):
+ * este quantitativo é só da EEE Novo Mundo por enquanto, mas a função em si
+ * não sabe disso — quem decide o dispositivo é o chamador (`main()` abaixo).
  */
-export function montarItens(linhas: readonly LinhaOrcamento[]): ResultadoMontagem {
+export function montarItens(linhas: readonly LinhaOrcamento[], projetoId: string): ResultadoMontagem {
   const { folhas, agregadoras } = separarFolhas(linhas);
   const avisos: string[] = [];
   const semDescricao: LinhaOrcamento[] = [];
@@ -271,6 +287,7 @@ export function montarItens(linhas: readonly LinhaOrcamento[]): ResultadoMontage
     }
 
     itens.push({
+      projeto_id: projetoId,
       item_codigo: codigoFinal,
       descricao: linha.descricao,
       unidade: linha.unidade,
@@ -524,7 +541,17 @@ async function main(): Promise<void> {
   console.log(`Modo:    ${opcoes.dryRun ? 'DRY-RUN (nada é gravado)' : 'APPLY (grava no banco)'}`);
 
   const parse = await lerPlanilhaOrcamento(opcoes.arquivo);
-  const montagem = montarItens(parse.linhas);
+
+  // Em dry-run não tocamos no banco (mantém o script 100% offline, só com o
+  // .xlsx): o projeto_id é o placeholder acima, nunca gravado. Em apply,
+  // resolve o id real do dispositivo antes de montar o payload.
+  let projetoId = PROJETO_ID_DRY_RUN;
+  if (!opcoes.dryRun) {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    projetoId = await buscarProjetoId(createAdminClient(), NOME_PROJETO);
+  }
+
+  const montagem = montarItens(parse.linhas, projetoId);
   const totais = calcularTotais(montagem.itens);
   imprimirRelatorio(parse, montagem, totais);
 
@@ -537,14 +564,14 @@ async function main(): Promise<void> {
   const supabase = createAdminClient();
   const { error } = await supabase
     .from('orcamento_itens')
-    .upsert(montagem.itens, { onConflict: 'item_codigo' });
+    .upsert(montagem.itens, { onConflict: 'projeto_id,item_codigo' });
 
   if (error) {
     destaque(`FALHA AO GRAVAR: ${error.message}`);
     process.exitCode = 1;
     return;
   }
-  console.log(`\n${montagem.itens.length} itens gravados em orcamento_itens (upsert por item_codigo).\n`);
+  console.log(`\n${montagem.itens.length} itens gravados em orcamento_itens (upsert por projeto_id+item_codigo).\n`);
 }
 
 // Executa só quando chamado pela CLI (o módulo é importado pelos testes).

@@ -39,8 +39,10 @@ import {
   upsertAtividades,
   upsertGrupos,
   atualizarPercentualDoProjeto,
+  NOME_PROJETO,
   type AtividadeOrfa,
 } from './import/upsert';
+import { obterConfiguracaoDispositivo } from '@/lib/smartsheet/config-dispositivos';
 import type { AtividadeInsert, TipoElementoVisual } from '@/types/database';
 
 /* -------------------------------------------------------------------------- */
@@ -193,7 +195,7 @@ async function executarEtapaBanco(
   const { createAdminClient } = await import('@/lib/supabase/admin');
   const cliente = createAdminClient();
 
-  const projetoId = await buscarProjetoId(cliente);
+  const projetoId = await buscarProjetoId(cliente, NOME_PROJETO);
 
   // Lê primeiro para preservar os rótulos legíveis já gravados (`grupos_macro.
   // nome`): o import casa por `nome_smartsheet` e não pode sobrescrever a UI
@@ -229,7 +231,7 @@ async function executarEtapaBanco(
     );
   }
 
-  const idPorTipoElemento: Map<TipoElementoVisual, string> = await buscarElementosVisuais(cliente);
+  const idPorTipoElemento: Map<TipoElementoVisual, string> = await buscarElementosVisuais(cliente, projetoId);
   const { linhas, descartadasPorColisao, semGrupo } = montarPayloadAtividades(
     resultado.atividades,
     idPorGrupo,
@@ -304,7 +306,7 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
 
   let resultado: Awaited<ReturnType<typeof parsearCronograma>>;
   try {
-    resultado = await parsearCronograma(caminhoAbsoluto);
+    resultado = await parsearCronograma(caminhoAbsoluto, obterConfiguracaoDispositivo(NOME_PROJETO));
   } catch (erro) {
     const mensagem = erro instanceof Error ? erro.message : String(erro);
     console.error(`\nERRO ao ler/parsear a planilha: ${mensagem}`);

@@ -53,6 +53,7 @@ export default async function CronogramaPage({ searchParams }: CronogramaPagePro
       />
 
       <BotaoSincronizar
+        projetoId={projeto?.id ?? null}
         sincronizadoEm={projeto?.smartsheet_sincronizado_em ?? null}
         podeSincronizar={sessao.papel === 'gestor'}
       />

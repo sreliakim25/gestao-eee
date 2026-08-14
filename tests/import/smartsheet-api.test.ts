@@ -120,7 +120,7 @@ describe('converterParaLinhasBrutas', () => {
 describe('integração com o parser do .xlsx', () => {
   it('as linhas convertidas passam pelo mesmo interpretarLinhas', () => {
     const { linhas } = converterParaLinhasBrutas(sheetFake());
-    const resultado = interpretarLinhas(linhas);
+    const resultado = interpretarLinhas(linhas, { nomeRaizEscopo: 'E.E.E. - NOVO MUNDO' });
 
     // Escopo: a linha "FORA DO ESCOPO" não entra.
     expect(resultado.linhasForaDeEscopo).toBe(1);

@@ -22,10 +22,13 @@ import {
 const temPlanilha = existsSync(CAMINHO_PADRAO_XLSX);
 const suite = temPlanilha ? describe : describe.skip;
 
+/** Id fictício: o teste não toca no banco, só na montagem do payload. */
+const PROJETO_ID_TESTE = '00000000-0000-4000-8000-000000000099';
+
 suite('planilha real — aba ORÇAMENTO', () => {
   async function importar() {
     const parse = await lerPlanilhaOrcamento(CAMINHO_PADRAO_XLSX);
-    const montagem = montarItens(parse.linhas);
+    const montagem = montarItens(parse.linhas, PROJETO_ID_TESTE);
     return { parse, montagem, totais: calcularTotais(montagem.itens) };
   }
 

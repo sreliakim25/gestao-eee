@@ -89,6 +89,20 @@ export interface AtividadeParseada {
   tipoElementoVisual: TipoElementoVisual | null;
 }
 
+/**
+ * Assinatura da regra de vínculo atividade → elemento visual.
+ *
+ * Fica em `tipos.ts` (não em `mapeamento-elementos.ts`) porque é consumida por
+ * `parser.ts` só como TIPO — `interpretarLinhas` recebe a função pronta via
+ * `OpcoesInterpretacao.inferirElementoVisual`, nunca importa
+ * `mapeamento-elementos.ts` diretamente. Quem decide qual regra usar para cada
+ * dispositivo é `lib/smartsheet/config-dispositivos.ts`.
+ */
+export type InferirElementoVisualFn = (
+  caminhoWbs: readonly string[],
+  grupoMacroNome: string,
+) => TipoElementoVisual | null;
+
 /** Resultado completo do parse de um arquivo. */
 export interface ResultadoParse {
   grupos: GrupoParseado[];

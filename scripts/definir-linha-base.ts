@@ -20,6 +20,8 @@
 import { config } from 'dotenv';
 import { Client } from 'pg';
 import { parsearCronograma } from './import/xlsx';
+import { NOME_PROJETO } from './import/upsert';
+import { obterConfiguracaoDispositivo } from '@/lib/smartsheet/config-dispositivos';
 
 config({ path: '.env.local', quiet: true });
 
@@ -42,7 +44,9 @@ async function main(): Promise<void> {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL não definida em .env.local.');
 
-  const cliente = new Client({ connectionString: url });
+  // Ver scripts/aplicar-schema.ts: o pooler do Supabase exige SSL, sem isto a
+  // conexão é recusada com uma mensagem enganosa de "senha errada".
+  const cliente = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
   await cliente.connect();
 
   try {
@@ -90,7 +94,7 @@ async function main(): Promise<void> {
     }
 
     // --- baseline a partir do snapshot do .xlsx ------------------------------
-    const cronograma = await parsearCronograma(CAMINHO_XLSX);
+    const cronograma = await parsearCronograma(CAMINHO_XLSX, obterConfiguracaoDispositivo(NOME_PROJETO));
     console.log(`\nLendo linha de base de: ${CAMINHO_XLSX}`);
     console.log(`  ${cronograma.atividades.length} atividades no arquivo.`);
 

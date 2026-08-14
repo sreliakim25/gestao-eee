@@ -1,9 +1,17 @@
 /**
- * POST /api/sincronizar — puxa o cronograma do Smartsheet sob demanda.
+ * POST /api/sincronizar — puxa o cronograma do Smartsheet sob demanda, para
+ * UM dispositivo (projeto).
  *
- * É o mesmo `sincronizarCronograma()` que o CLI e o cron chamam; a rota só
- * cuida de quem pode disparar e de não deixar a chamada virar metralhadora
- * contra a API do Smartsheet.
+ * É o mesmo `sincronizarPlanilhaPrincipal()` que o CLI usa; a rota só cuida de
+ * quem pode disparar e de não deixar a chamada virar metralhadora contra a
+ * API do Smartsheet.
+ *
+ * DISPOSITIVO ATUAL: este app está virando multi-dispositivo, e a resolução
+ * de "qual é o dispositivo atualmente selecionado" (cookie) é responsabilidade
+ * de outra camada (fluxo de navegação/seleção). Esta rota não decide de onde
+ * o `projetoId` vem — só exige que quem chama mande explicitamente
+ * `POST { projetoId }` no corpo. Ausência de `projetoId` é erro claro (400),
+ * nunca um fallback silencioso para "o único projeto que existe".
  *
  * POR QUE NÃO SINCRONIZAR AUTOMATICAMENTE A CADA LOGIN
  *
@@ -16,22 +24,27 @@
  */
 
 import { NextResponse } from 'next/server';
-import { ErroSync, sincronizarCronograma } from '@/lib/smartsheet/sincronizar';
+import { ErroSync, sincronizarPlanilhaPrincipal } from '@/lib/smartsheet/sincronizar';
 import { ErroSmartsheet } from '@/scripts/import/smartsheet-api';
 import { getPerfilAtual, getUsuarioAtual } from '@/lib/supabase/server';
 
-/** Intervalo mínimo entre syncs disparados pela tela. */
+/** Intervalo mínimo entre syncs disparados pela tela, POR DISPOSITIVO. */
 const INTERVALO_MINIMO_MS = 60_000;
 
 /**
- * Trava em memória do processo. Não é distribuída — em várias instâncias na
- * Vercel cada uma tem a sua. Serve contra clique repetido e duplo-clique, que
- * é o caso real; contra abuso deliberado seria preciso um lock no Postgres.
+ * Travas em memória do processo, chaveadas por `projetoId`. Não são
+ * distribuídas — em várias instâncias na Vercel cada uma tem a sua. Servem
+ * contra clique repetido e duplo-clique, que é o caso real; contra abuso
+ * deliberado seria preciso um lock no Postgres.
+ *
+ * Chavear por `projetoId` (em vez de uma única trava global, como antes) é o
+ * que garante que sincronizar o dispositivo A não trave o botão do
+ * dispositivo B.
  */
-let ultimoSyncMs = 0;
-let sincronizando = false;
+const ultimoSyncPorProjeto = new Map<string, number>();
+const sincronizandoPorProjeto = new Set<string>();
 
-export async function POST() {
+export async function POST(request: Request) {
   const usuario = await getUsuarioAtual().catch(() => null);
   if (!usuario) {
     return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 });
@@ -46,14 +59,33 @@ export async function POST() {
     );
   }
 
-  if (sincronizando) {
+  let corpo: unknown;
+  try {
+    corpo = await request.json();
+  } catch {
+    corpo = null;
+  }
+  const projetoId =
+    corpo && typeof corpo === 'object' && typeof (corpo as { projetoId?: unknown }).projetoId === 'string'
+      ? (corpo as { projetoId: string }).projetoId
+      : null;
+
+  if (!projetoId) {
     return NextResponse.json(
-      { erro: 'Já existe uma sincronização em andamento.' },
+      { erro: 'Informe o projetoId do dispositivo a sincronizar.' },
+      { status: 400 },
+    );
+  }
+
+  if (sincronizandoPorProjeto.has(projetoId)) {
+    return NextResponse.json(
+      { erro: 'Já existe uma sincronização em andamento para este dispositivo.' },
       { status: 409 },
     );
   }
 
   const agora = Date.now();
+  const ultimoSyncMs = ultimoSyncPorProjeto.get(projetoId) ?? 0;
   if (agora - ultimoSyncMs < INTERVALO_MINIMO_MS) {
     const faltam = Math.ceil((INTERVALO_MINIMO_MS - (agora - ultimoSyncMs)) / 1000);
     return NextResponse.json(
@@ -62,10 +94,10 @@ export async function POST() {
     );
   }
 
-  sincronizando = true;
+  sincronizandoPorProjeto.add(projetoId);
   try {
-    const resultado = await sincronizarCronograma();
-    ultimoSyncMs = Date.now();
+    const resultado = await sincronizarPlanilhaPrincipal(projetoId);
+    ultimoSyncPorProjeto.set(projetoId, Date.now());
     return NextResponse.json({ resultado });
   } catch (erro) {
     // Mensagens tratadas podem ir para a tela; o resto vira genérico, porque
@@ -80,6 +112,6 @@ export async function POST() {
       { status: 502 },
     );
   } finally {
-    sincronizando = false;
+    sincronizandoPorProjeto.delete(projetoId);
   }
 }

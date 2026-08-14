@@ -16,11 +16,12 @@
  * (CVEs conhecidos, sem correção).
  */
 
-import { inferirElementoVisual, normalizarTexto } from './mapeamento-elementos';
+import { normalizarTexto } from './mapeamento-elementos';
 import type {
   AtividadeParseada,
   ColunaSmartsheet,
   GrupoParseado,
+  InferirElementoVisualFn,
   LinhaBruta,
   ResultadoParse,
 } from './tipos';
@@ -30,11 +31,18 @@ import type {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Nome da linha raiz do ÚNICO ramo que entra neste app.
+ * Nome da linha raiz do ÚNICO ramo que entra no banco para a EEE Novo Mundo.
  * Tudo o que estiver fora deste ramo (Engenharia de Produto, Engenharia de
  * Custos, Suprimentos EC, Sustentabilidade/Legalização, e o marco corporativo
  * "MARCOS CONDICIONANTES PARA INÍCIO DA EXECUÇÃO") é descartado — regra 3 do
  * CLAUDE.md e seção 1 do plano de execução.
+ *
+ * MULTI-DISPOSITIVO: este valor só é usado quando `interpretarLinhas` recebe
+ * `opcoes.nomeRaizEscopo` explicitamente — é o caso da Novo Mundo, cuja
+ * planilha é comprovadamente um macro-cronograma corporativo com mais de um
+ * ramo (ver `lib/smartsheet/config-dispositivos.ts`). Os demais dispositivos
+ * da UDE têm planilha dedicada e não passam essa opção — `interpretarLinhas`
+ * importa a planilha inteira sem podar ramo nenhum.
  */
 export const NOME_RAIZ_ESCOPO = 'E.E.E. - NOVO MUNDO';
 
@@ -215,17 +223,56 @@ export function paraBooleano(valor: unknown): boolean {
 /* Camada 2 — interpretação (pura)                                            */
 /* -------------------------------------------------------------------------- */
 
-/** Confere se uma linha é a raiz do ramo em escopo. */
-function ehRaizDoEscopo(nome: string): boolean {
-  return normalizarTexto(nome) === normalizarTexto(NOME_RAIZ_ESCOPO);
+/** Confere se uma linha é a raiz de um ramo de escopo com o nome dado. */
+function ehRaizDoEscopo(nome: string, nomeRaizEscopo: string): boolean {
+  return normalizarTexto(nome) === normalizarTexto(nomeRaizEscopo);
+}
+
+/** Função padrão de vínculo com elemento visual: nunca vincula. */
+const inferirElementoVisualPadrao: InferirElementoVisualFn = () => null;
+
+/**
+ * Opções de `interpretarLinhas` — controlam o comportamento por dispositivo.
+ * Quem escolhe os valores é `lib/smartsheet/config-dispositivos.ts`, nunca o
+ * parser: este módulo continua puro e sem conhecimento de qual dispositivo
+ * está sendo importado.
+ */
+export interface OpcoesInterpretacao {
+  /**
+   * Nome da linha raiz do único ramo em escopo, quando a planilha é um
+   * macro-cronograma corporativo com mais de um ramo (caso comprovado da EEE
+   * Novo Mundo — ver `NOME_RAIZ_ESCOPO`). Quando OMITIDO, a planilha inteira
+   * é importada sem podar ramo nenhum — caso da maioria dos dispositivos da
+   * UDE, cuja planilha já é dedicada.
+   */
+  nomeRaizEscopo?: string;
+  /**
+   * Regra de vínculo atividade → elemento visual. Quando OMITIDA, usa o
+   * default que sempre devolve `null` — um dispositivo sem mapeamento próprio
+   * de elemento visual importa normalmente, só com `elemento_visual_id = null`
+   * em todas as atividades. NUNCA trava o import por falta de regra.
+   */
+  inferirElementoVisual?: InferirElementoVisualFn;
 }
 
 /**
- * Reconstrói o WBS a partir da coluna "Nível de hierarquia", recorta só o ramo
- * "E.E.E. - NOVO MUNDO" e devolve grupos macro + atividades já tipados.
+ * Reconstrói o WBS a partir da coluna "Nível de hierarquia" e devolve grupos
+ * macro + atividades já tipados.
+ *
+ * Sem `opcoes.nomeRaizEscopo`, a planilha inteira vira o "ramo": os nós de
+ * nível mais alto (o menor valor de "Nível de hierarquia" presente) viram
+ * grupos macro diretamente, sem procurar nem exigir uma linha-raiz específica.
+ * Com `opcoes.nomeRaizEscopo`, mantém o comportamento original: procura a
+ * linha com esse nome, recorta só os descendentes dela e lança erro se não
+ * achar (ver `CHAVE_UPSERT` acima para o porquê de nunca importar o
+ * macro-cronograma inteiro em silêncio).
  */
-export function interpretarLinhas(linhas: readonly LinhaBruta[]): ResultadoParse {
+export function interpretarLinhas(
+  linhas: readonly LinhaBruta[],
+  opcoes: OpcoesInterpretacao = {},
+): ResultadoParse {
   const avisos: string[] = [];
+  const inferirElemento = opcoes.inferirElementoVisual ?? inferirElementoVisualPadrao;
 
   // Pré-processa: nível + nome de cada linha, separando as vazias.
   const preparadas = linhas.map((linha) => ({
@@ -248,31 +295,50 @@ export function interpretarLinhas(linhas: readonly LinhaBruta[]): ResultadoParse
     );
   }
 
-  // Localiza a raiz do escopo.
-  const indiceRaiz = comConteudo.findIndex((p) => ehRaizDoEscopo(p.nome));
-  if (indiceRaiz === -1) {
-    throw new Error(
-      `Ramo "${NOME_RAIZ_ESCOPO}" não encontrado na planilha. ` +
-        `O import é abortado de propósito: sem esse ramo não há o que importar, ` +
-        `e importar o macro-cronograma corporativo inteiro violaria o escopo do app.`,
-    );
-  }
+  type LinhaPreparada = { linha: LinhaBruta; nivel: number; nome: string };
 
-  const raizPreparada = comConteudo[indiceRaiz];
-  const nivelRaiz = raizPreparada.nivel;
+  let ramo: LinhaPreparada[];
+  let raizPreparada: LinhaPreparada | null;
+  let nivelBase: number;
+  let linhasForaDeEscopo: number;
 
-  // O ramo vai da raiz até a próxima linha de nível <= nível da raiz.
-  let fimDoRamo = comConteudo.length;
-  for (let i = indiceRaiz + 1; i < comConteudo.length; i++) {
-    if (comConteudo[i].nivel <= nivelRaiz) {
-      fimDoRamo = i;
-      break;
+  if (opcoes.nomeRaizEscopo) {
+    const nomeRaizEscopo = opcoes.nomeRaizEscopo;
+
+    // Localiza a raiz do escopo.
+    const indiceRaiz = comConteudo.findIndex((p) => ehRaizDoEscopo(p.nome, nomeRaizEscopo));
+    if (indiceRaiz === -1) {
+      throw new Error(
+        `Ramo "${nomeRaizEscopo}" não encontrado na planilha. ` +
+          `O import é abortado de propósito: sem esse ramo não há o que importar, ` +
+          `e importar o macro-cronograma corporativo inteiro violaria o escopo do app.`,
+      );
     }
-  }
-  const ramo = comConteudo.slice(indiceRaiz + 1, fimDoRamo);
 
-  // Tudo que não é a raiz nem descendente dela está fora de escopo.
-  const linhasForaDeEscopo = comConteudo.length - ramo.length - 1;
+    raizPreparada = comConteudo[indiceRaiz];
+    nivelBase = raizPreparada.nivel;
+
+    // O ramo vai da raiz até a próxima linha de nível <= nível da raiz.
+    let fimDoRamo = comConteudo.length;
+    for (let i = indiceRaiz + 1; i < comConteudo.length; i++) {
+      if (comConteudo[i].nivel <= nivelBase) {
+        fimDoRamo = i;
+        break;
+      }
+    }
+    ramo = comConteudo.slice(indiceRaiz + 1, fimDoRamo);
+
+    // Tudo que não é a raiz nem descendente dela está fora de escopo.
+    linhasForaDeEscopo = comConteudo.length - ramo.length - 1;
+  } else {
+    // Sem raiz de escopo: a planilha inteira entra, sem poda de ramo. Os nós
+    // do nível mais alto presente (normalmente 0 ou 1) viram grupos macro
+    // diretamente — não há linha-raiz física a descartar nem a validar.
+    raizPreparada = null;
+    ramo = comConteudo;
+    linhasForaDeEscopo = 0;
+    nivelBase = comConteudo.length > 0 ? Math.min(...comConteudo.map((p) => p.nivel)) - 1 : 0;
+  }
 
   // Percorre o ramo mantendo a pilha de ancestrais para montar o caminho WBS.
   const grupos: GrupoParseado[] = [];
@@ -283,7 +349,7 @@ export function interpretarLinhas(linhas: readonly LinhaBruta[]): ResultadoParse
   ramo.forEach((atual, indice) => {
     const proxima = ramo[indice + 1];
     const ehFolha = !proxima || proxima.nivel <= atual.nivel;
-    const nivelRelativo = atual.nivel - nivelRaiz; // 1 = grupo macro
+    const nivelRelativo = atual.nivel - nivelBase; // 1 = grupo macro
 
     if (nivelRelativo === 1) {
       // Nível 1 do ramo → grupo macro. A string crua do .xlsx é a chave
@@ -351,7 +417,7 @@ export function interpretarLinhas(linhas: readonly LinhaBruta[]): ResultadoParse
       folgaDias: paraFolgaDias(atual.linha.celulas.folga),
       recurso: paraTexto(atual.linha.celulas.recurso),
       ehFolha,
-      tipoElementoVisual: inferirElementoVisual(caminhoWbs, grupoAtual.nomeSmartsheet),
+      tipoElementoVisual: inferirElemento(caminhoWbs, grupoAtual.nomeSmartsheet),
     });
   });
 
@@ -374,18 +440,35 @@ export function interpretarLinhas(linhas: readonly LinhaBruta[]): ResultadoParse
     );
   }
 
-  const raizPercentual = paraPercentual(raizPreparada.linha.celulas.percentualConcluida).percentual;
+  // Metadados da "raiz": quando há linha física (opcoes.nomeRaizEscopo), vêm
+  // dela mesma. Sem raiz física (planilha inteira, sem poda), não existe uma
+  // única linha que represente "o dispositivo inteiro" — o percentual fica
+  // null de propósito (nenhuma linha do .xlsx é a fonte oficial desse rollup)
+  // e as datas extremas são derivadas das próprias atividades importadas.
+  const raiz = raizPreparada
+    ? {
+        linhaPlanilha: raizPreparada.linha.linhaPlanilha,
+        nome: raizPreparada.nome,
+        percentualConcluido: paraPercentual(raizPreparada.linha.celulas.percentualConcluida).percentual,
+        dataInicioPlanejada: paraDataIso(raizPreparada.linha.celulas.iniciar),
+        dataFimPlanejada: paraDataIso(raizPreparada.linha.celulas.terminar),
+      }
+    : (() => {
+        const inicios = atividades.map((a) => a.dataInicioPlanejada).filter((d): d is string => !!d);
+        const fins = atividades.map((a) => a.dataFimPlanejada).filter((d): d is string => !!d);
+        return {
+          linhaPlanilha: 0,
+          nome: '(planilha completa — sem nó de raiz de escopo)',
+          percentualConcluido: null,
+          dataInicioPlanejada: inicios.length ? inicios.slice().sort()[0] : null,
+          dataFimPlanejada: fins.length ? fins.slice().sort().at(-1)! : null,
+        };
+      })();
 
   return {
     grupos,
     atividades,
-    raiz: {
-      linhaPlanilha: raizPreparada.linha.linhaPlanilha,
-      nome: raizPreparada.nome,
-      percentualConcluido: raizPercentual,
-      dataInicioPlanejada: paraDataIso(raizPreparada.linha.celulas.iniciar),
-      dataFimPlanejada: paraDataIso(raizPreparada.linha.celulas.terminar),
-    },
+    raiz,
     linhasForaDeEscopo,
     linhasVaziasIgnoradas,
     avisos,

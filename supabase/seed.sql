@@ -49,18 +49,28 @@ on conflict (projeto_id, nome) do update
 
 -- Elementos visuais da Gestão Visual (tudo dentro do muro perimetral).
 -- svg_path_id = id do nó correspondente no SVG em public/svg (agente gestao-visual).
-insert into public.elementos_visuais (nome, tipo, svg_path_id, ordem)
-values
-  ('Poço úmido',                    'poco_umido',                   'poco-umido',                   1),
-  ('Câmara de grades',              'camara_grades',                'camara-grades',                2),
-  ('Casa de comando',               'casa_comando',                 'casa-comando',                 3),
-  ('Caixa de comporta',             'caixa_comporta',               'caixa-comporta',               4),
-  ('Caixa de válvulas',             'caixa_valvulas',               'caixa-valvulas',               5),
-  ('Caixa do tanque hidropneumático','caixa_tanque_hidropneumatico', 'caixa-tanque-hidropneumatico', 6),
-  ('Caixa do medidor de vazão',     'caixa_medidor_vazao',          'caixa-medidor-vazao',          7),
-  ('Pavimentação',                  'pavimentacao',                 'pavimentacao',                 8),
-  ('Muro perimetral',               'muro_perimetral',              'muro-perimetral',              9)
-on conflict (nome) do update
+-- Vinculados ao projeto "E.E.E. - NOVO MUNDO" (elementos_visuais.projeto_id) —
+-- mesmo padrão do insert de grupos_macro acima: nome e svg_path_id são únicos
+-- por projeto, não mais no banco inteiro.
+-- Cast explícito de e.tipo (text, tipo resolvido pela subquery VALUES) para o
+-- enum tipo_elemento_visual: sem ele o INSERT falha (não há cast implícito de
+-- text para enum em atribuição, só em literal direto de VALUES).
+insert into public.elementos_visuais (projeto_id, nome, tipo, svg_path_id, ordem)
+select p.id, e.nome, e.tipo::public.tipo_elemento_visual, e.svg_path_id, e.ordem
+from public.projetos p,
+     (values
+       ('Poço úmido',                    'poco_umido',                   'poco-umido',                   1),
+       ('Câmara de grades',              'camara_grades',                'camara-grades',                2),
+       ('Casa de comando',               'casa_comando',                 'casa-comando',                 3),
+       ('Caixa de comporta',             'caixa_comporta',               'caixa-comporta',               4),
+       ('Caixa de válvulas',             'caixa_valvulas',               'caixa-valvulas',               5),
+       ('Caixa do tanque hidropneumático','caixa_tanque_hidropneumatico', 'caixa-tanque-hidropneumatico', 6),
+       ('Caixa do medidor de vazão',     'caixa_medidor_vazao',          'caixa-medidor-vazao',          7),
+       ('Pavimentação',                  'pavimentacao',                 'pavimentacao',                 8),
+       ('Muro perimetral',               'muro_perimetral',              'muro-perimetral',              9)
+     ) as e(nome, tipo, svg_path_id, ordem)
+where p.nome = 'E.E.E. - NOVO MUNDO'
+on conflict (projeto_id, nome) do update
   set tipo        = excluded.tipo,
       svg_path_id = excluded.svg_path_id,
       ordem       = excluded.ordem;

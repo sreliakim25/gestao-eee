@@ -74,7 +74,12 @@ async function main(): Promise<void> {
     return;
   }
 
-  const cliente = new Client({ connectionString: url });
+  // O pooler do Supabase (Supavisor) exige SSL; sem isto a conexão é recusada
+  // e o erro que o `pg` devolve ("password authentication failed") é enganoso —
+  // parece senha errada, mas é rejeição de handshake TLS. `rejectUnauthorized:
+  // false` é o padrão aceito pro pooler porque o cert dele não bate com a CA
+  // padrão do Node; a conexão em si continua criptografada.
+  const cliente = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
   await cliente.connect();
   console.log('Conectado.\n');
 

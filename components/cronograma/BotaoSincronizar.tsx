@@ -12,6 +12,13 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface Props {
+  /**
+   * Dispositivo (projeto) a sincronizar — `POST /api/sincronizar` exige esse
+   * id explicitamente agora que o app é multi-dispositivo. `null` enquanto o
+   * chamador não sabe qual é o dispositivo atual (ver `lib/dados/dispositivo.ts`,
+   * ainda não existente nesta fase): o botão some.
+   */
+  projetoId: string | null;
   /** `projetos.smartsheet_sincronizado_em`. */
   sincronizadoEm: string | null;
   /** Só gestor pode disparar; para os demais mostramos apenas a data. */
@@ -36,7 +43,7 @@ function tempoDecorrido(iso: string, agora: Date): { texto: string; horas: numbe
   return { texto: `há ${dias} dia${dias === 1 ? '' : 's'}`, horas };
 }
 
-export function BotaoSincronizar({ sincronizadoEm, podeSincronizar, limiteHoras = 24 }: Props) {
+export function BotaoSincronizar({ projetoId, sincronizadoEm, podeSincronizar, limiteHoras = 24 }: Props) {
   const router = useRouter();
   const [estado, setEstado] = useState<'ocioso' | 'sincronizando'>('ocioso');
   const [mensagem, setMensagem] = useState<string | null>(null);
@@ -46,11 +53,19 @@ export function BotaoSincronizar({ sincronizadoEm, podeSincronizar, limiteHoras 
   const desatualizado = decorrido !== null && decorrido.horas >= limiteHoras;
 
   async function sincronizar() {
+    if (!projetoId) {
+      setErro('Dispositivo não identificado — não é possível sincronizar.');
+      return;
+    }
     setEstado('sincronizando');
     setErro(null);
     setMensagem(null);
     try {
-      const resposta = await fetch('/api/sincronizar', { method: 'POST' });
+      const resposta = await fetch('/api/sincronizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projetoId }),
+      });
       const corpo = await resposta.json();
       if (!resposta.ok) {
         setErro(typeof corpo?.erro === 'string' ? corpo.erro : 'Falha ao sincronizar.');
@@ -72,7 +87,7 @@ export function BotaoSincronizar({ sincronizadoEm, podeSincronizar, limiteHoras 
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
-      {podeSincronizar ? (
+      {podeSincronizar && projetoId ? (
         <button
           type="button"
           onClick={sincronizar}

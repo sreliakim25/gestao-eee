@@ -14,6 +14,7 @@ import {
   CABECALHOS,
   COLUNAS_OBRIGATORIAS,
   interpretarLinhas,
+  type OpcoesInterpretacao,
 } from './parser';
 import { normalizarTexto } from './mapeamento-elementos';
 import type { ColunaSmartsheet, LinhaBruta, ResultadoParse } from './tipos';
@@ -79,7 +80,17 @@ export async function lerLinhasBrutas(caminhoArquivo: string): Promise<LinhaBrut
   return linhas;
 }
 
-/** Atalho: lê o arquivo e já interpreta. */
-export async function parsearCronograma(caminhoArquivo: string): Promise<ResultadoParse> {
-  return interpretarLinhas(await lerLinhasBrutas(caminhoArquivo));
+/**
+ * Atalho: lê o arquivo e já interpreta.
+ *
+ * `opcoes` é repassado direto a `interpretarLinhas` — este módulo não conhece
+ * dispositivo nenhum, só arquivo. Quem decide `nomeRaizEscopo` /
+ * `inferirElementoVisual` para cada dispositivo é
+ * `lib/smartsheet/config-dispositivos.ts`.
+ */
+export async function parsearCronograma(
+  caminhoArquivo: string,
+  opcoes?: OpcoesInterpretacao,
+): Promise<ResultadoParse> {
+  return interpretarLinhas(await lerLinhasBrutas(caminhoArquivo), opcoes);
 }

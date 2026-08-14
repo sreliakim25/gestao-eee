@@ -12,7 +12,8 @@
 import { describe, expect, it } from 'vitest';
 
 import fixture from '../fixtures/cronograma-smartsheet.json';
-import { interpretarLinhas } from '@/scripts/import/parser';
+import { interpretarLinhas, NOME_RAIZ_ESCOPO } from '@/scripts/import/parser';
+import { inferirElementoVisual } from '@/scripts/import/mapeamento-elementos';
 import {
   chaveAtividade,
   detectarOrfas,
@@ -23,7 +24,13 @@ import {
 import type { LinhaBruta } from '@/scripts/import/tipos';
 import type { TipoElementoVisual } from '@/types/database';
 
-const resultado = interpretarLinhas(fixture as unknown as LinhaBruta[]);
+// Mesma configuração que `lib/smartsheet/config-dispositivos.ts` usa em
+// produção para a Novo Mundo: poda o ramo E aplica a regra real de vínculo de
+// elemento visual — os testes abaixo dependem de `elemento_visual_id` real.
+const resultado = interpretarLinhas(fixture as unknown as LinhaBruta[], {
+  nomeRaizEscopo: NOME_RAIZ_ESCOPO,
+  inferirElementoVisual,
+});
 
 const PROJETO_ID = '00000000-0000-4000-8000-000000000001';
 
@@ -142,7 +149,10 @@ describe('payload de atividades', () => {
   });
 
   it('IDEMPOTÊNCIA: reparsear o mesmo arquivo gera o mesmo payload', () => {
-    const outroParse = interpretarLinhas(fixture as unknown as LinhaBruta[]);
+    const outroParse = interpretarLinhas(fixture as unknown as LinhaBruta[], {
+      nomeRaizEscopo: NOME_RAIZ_ESCOPO,
+      inferirElementoVisual,
+    });
     const outro = montarPayloadAtividades(outroParse.atividades, idPorGrupo, idPorTipoElemento);
     expect(JSON.stringify(outro.linhas)).toBe(JSON.stringify(linhas));
   });

@@ -15,6 +15,9 @@ import {
 import { ORDEM_CATEGORIAS, ROTULO_CATEGORIA } from '@/app/orcamento/categorias';
 import type { OrcamentoResumoCategoria } from '@/types/database';
 
+/** Id fictício: só para satisfazer o tipo da view (`projeto_id` é coluna real desde a migration multi-dispositivo). */
+const PROJETO_ID_TESTE = '00000000-0000-4000-8000-000000000099';
+
 /** Linhas da view `orcamento_resumo_categoria` com os valores reais do import. */
 const VIEW_REAL: OrcamentoResumoCategoria[] = [
   {
@@ -24,6 +27,7 @@ const VIEW_REAL: OrcamentoResumoCategoria[] = [
     valor_medido_mao_de_obra: 52983,
     valor_compra_direta: 0,
     valor_medido_compra_direta: 0,
+    projeto_id: PROJETO_ID_TESTE,
   },
   {
     categoria: 'estacao_elevatoria',
@@ -32,6 +36,7 @@ const VIEW_REAL: OrcamentoResumoCategoria[] = [
     valor_medido_mao_de_obra: 0,
     valor_compra_direta: 76446,
     valor_medido_compra_direta: 0,
+    projeto_id: PROJETO_ID_TESTE,
   },
   {
     categoria: 'caixa_tanque_pneumatico',
@@ -40,6 +45,7 @@ const VIEW_REAL: OrcamentoResumoCategoria[] = [
     valor_medido_mao_de_obra: 0,
     valor_compra_direta: 3298,
     valor_medido_compra_direta: 0,
+    projeto_id: PROJETO_ID_TESTE,
   },
   {
     categoria: 'casa_comando',
@@ -48,6 +54,7 @@ const VIEW_REAL: OrcamentoResumoCategoria[] = [
     valor_medido_mao_de_obra: 0,
     valor_compra_direta: 10500.29,
     valor_medido_compra_direta: 0,
+    projeto_id: PROJETO_ID_TESTE,
   },
   {
     categoria: 'muro_externo',
@@ -56,6 +63,7 @@ const VIEW_REAL: OrcamentoResumoCategoria[] = [
     valor_medido_mao_de_obra: 0,
     valor_compra_direta: 14624.25,
     valor_medido_compra_direta: 0,
+    projeto_id: PROJETO_ID_TESTE,
   },
   {
     categoria: 'sistema_diversos',
@@ -64,6 +72,7 @@ const VIEW_REAL: OrcamentoResumoCategoria[] = [
     valor_medido_mao_de_obra: 0,
     valor_compra_direta: 0,
     valor_medido_compra_direta: 0,
+    projeto_id: PROJETO_ID_TESTE,
   },
 ];
 
@@ -147,6 +156,7 @@ describe('separação concreto x mão de obra', () => {
         valor_medido_mao_de_obra: 250,
         valor_compra_direta: 500,
         valor_medido_compra_direta: 500,
+        projeto_id: PROJETO_ID_TESTE,
       },
     ]).filter((r) => r.categoria === 'casa_comando');
 
@@ -173,6 +183,7 @@ describe('saldo do contrato', () => {
           valor_medido_mao_de_obra: 40000,
           valor_compra_direta: 20000,
           valor_medido_compra_direta: 20000,
+          projeto_id: PROJETO_ID_TESTE,
         },
       ]),
     );

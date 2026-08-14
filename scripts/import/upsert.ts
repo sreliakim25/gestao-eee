@@ -17,7 +17,17 @@ import type {
 } from '@/types/database';
 import type { AtividadeParseada, GrupoParseado } from './tipos';
 
-/** Nome do projeto no banco — mesmo de `supabase/seed.sql`. */
+/**
+ * Nome do projeto (dispositivo) da EEE Novo Mundo no banco — mesmo de
+ * `supabase/seed.sql`.
+ *
+ * MULTI-DISPOSITIVO: esta constante é só a identidade da Novo Mundo. Os
+ * demais scripts CLI (`scripts/import-smartsheet.ts`, `scripts/import-orcamento.ts`,
+ * `scripts/sync-smartsheet.ts`) continuam dedicados a este dispositivo por
+ * enquanto e reaproveitam esta constante; `buscarProjetoId` abaixo já é
+ * genérica (recebe o nome como parâmetro) para quando outro script CLI
+ * precisar de outro dispositivo.
+ */
 export const NOME_PROJETO = 'E.E.E. - NOVO MUNDO';
 
 /** Chave lógica de uma atividade no banco: (grupo_macro_id, caminho_wbs). */
@@ -165,16 +175,24 @@ type Cliente = SupabaseClient<Database>;
 /** Tamanho de lote do upsert — evita payload gigante numa requisição só. */
 const TAMANHO_LOTE = 100;
 
-export async function buscarProjetoId(cliente: Cliente): Promise<string> {
+/**
+ * Resolve o id do projeto (dispositivo) pelo nome exato em `projetos.nome`.
+ *
+ * `nomeProjeto` é OBRIGATÓRIO: este módulo não decide mais implicitamente
+ * "a EEE Novo Mundo" — quem chama (CLI de um dispositivo específico,
+ * `lib/smartsheet/sincronizar.ts` iterando vários dispositivos, etc.) escolhe
+ * o nome. Use a constante `NOME_PROJETO` acima para a Novo Mundo.
+ */
+export async function buscarProjetoId(cliente: Cliente, nomeProjeto: string): Promise<string> {
   const { data, error } = await cliente
     .from('projetos')
     .select('id')
-    .eq('nome', NOME_PROJETO)
+    .eq('nome', nomeProjeto)
     .maybeSingle();
-  if (error) throw new Error(`Falha ao buscar o projeto "${NOME_PROJETO}": ${error.message}`);
+  if (error) throw new Error(`Falha ao buscar o projeto "${nomeProjeto}": ${error.message}`);
   if (!data) {
     throw new Error(
-      `Projeto "${NOME_PROJETO}" não existe no banco. Rode as migrations e o ` +
+      `Projeto "${nomeProjeto}" não existe no banco. Rode as migrations e o ` +
         `supabase/seed.sql antes do import.`,
     );
   }
@@ -214,11 +232,23 @@ export async function upsertGrupos(
   return new Map((data ?? []).map((g) => [g.nome_smartsheet, g.id]));
 }
 
-/** Mapa tipo do enum → id do elemento visual já semeado. */
+/**
+ * Mapa tipo do enum → id do elemento visual já semeado, PARA UM PROJETO.
+ *
+ * `elementos_visuais.tipo` só é único DENTRO de um projeto (migration
+ * `20260813100200_elementos_visuais_projeto.sql`): dois dispositivos podem
+ * ambos ter, por exemplo, um `poco_umido` próprio. Por isso `projetoId` é
+ * obrigatório — sem ele, o mapa misturaria elementos de dispositivos
+ * diferentes.
+ */
 export async function buscarElementosVisuais(
   cliente: Cliente,
+  projetoId: string,
 ): Promise<Map<TipoElementoVisual, string>> {
-  const { data, error } = await cliente.from('elementos_visuais').select('id, tipo');
+  const { data, error } = await cliente
+    .from('elementos_visuais')
+    .select('id, tipo')
+    .eq('projeto_id', projetoId);
   if (error) throw new Error(`Falha ao ler elementos_visuais: ${error.message}`);
   return new Map((data ?? []).map((e) => [e.tipo, e.id]));
 }
@@ -301,6 +331,32 @@ export async function atualizarPercentualDoProjeto(
 
   if (error) {
     throw new Error(`Falha ao gravar o percentual oficial do projeto: ${error.message}`);
+  }
+}
+
+/**
+ * Grava `ultimo_sincronizado_em` na linha de `projeto_planilhas_smartsheet`
+ * correspondente a (projetoId, sheetId).
+ *
+ * Chamado para TODA planilha sincronizada, independente do `papel` — é o
+ * carimbo "esta planilha específica foi lida agora". Já
+ * `projetos.smartsheet_sincronizado_em` (via `atualizarPercentualDoProjeto` /
+ * update direto em `sincronizarCronograma`) só é tocado quando `papel =
+ * 'principal'`, porque é ela quem dita o rollup e as datas do dispositivo.
+ */
+export async function atualizarUltimoSincronizadoPlanilha(
+  cliente: Cliente,
+  projetoId: string,
+  sheetId: string,
+  agoraIso: string,
+): Promise<void> {
+  const { error } = await cliente
+    .from('projeto_planilhas_smartsheet')
+    .update({ ultimo_sincronizado_em: agoraIso })
+    .eq('projeto_id', projetoId)
+    .eq('sheet_id', sheetId);
+  if (error) {
+    throw new Error(`Falha ao gravar o horário de sync da planilha: ${error.message}`);
   }
 }
 
