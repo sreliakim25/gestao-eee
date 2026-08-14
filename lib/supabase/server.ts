@@ -7,6 +7,7 @@ import 'server-only';
  * Continua usando a anon key + sessão do usuário, então a RLS permanece ativa.
  */
 
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -36,20 +37,30 @@ export async function createClient(): Promise<SupabaseClient<Database>> {
   });
 }
 
-/** Usuário autenticado da request atual (null se não houver sessão válida). */
-export async function getUsuarioAtual() {
+/**
+ * Usuário autenticado da request atual (null se não houver sessão válida).
+ *
+ * Envolvido em `cache()` do React para dedupe: dentro de uma mesma request
+ * de renderização (RSC), múltiplas chamadas (layout, `exigirSessao`, páginas
+ * etc.) resultam em uma única chamada real a `supabase.auth.getUser()`.
+ * A revalidação contra o servidor de Auth do Supabase continua acontecendo
+ * normalmente a cada nova request — isso não afeta a segurança.
+ */
+export const getUsuarioAtual = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
-}
+});
 
 /**
  * Perfil do usuário autenticado (gestor/fiscal/campo).
  * Retorna null se não houver sessão ou se a linha em `perfis` ainda não existir.
+ *
+ * Também envolvido em `cache()` do React pelo mesmo motivo de `getUsuarioAtual`.
  */
-export async function getPerfilAtual(): Promise<PerfilUsuario | null> {
+export const getPerfilAtual = cache(async (): Promise<PerfilUsuario | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -58,4 +69,4 @@ export async function getPerfilAtual(): Promise<PerfilUsuario | null> {
 
   const { data } = await supabase.from('perfis').select('*').eq('id', user.id).maybeSingle();
   return data ?? null;
-}
+});
