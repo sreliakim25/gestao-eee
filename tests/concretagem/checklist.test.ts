@@ -174,6 +174,7 @@ describe('mapeamento Row ↔ domínio', () => {
   it('converte a Row do banco preservando as regras', () => {
     const linha: ConcretagemPedido = {
       id: 'p1',
+      projeto_id: '00000000-0000-4000-8000-000000000099',
       etapa: 3,
       elementos: ['Par 4', 'Par 5'],
       elemento_visual_id: null,
@@ -197,7 +198,11 @@ describe('mapeamento Row ↔ domínio', () => {
   });
 
   it('o payload de escrita reflete o domínio', () => {
-    const insert = paraPedidoInsert(pedidoFixture({ volumeM3: 4.5, combinadoComSobra: true }));
+    const insert = paraPedidoInsert(
+      pedidoFixture({ volumeM3: 4.5, combinadoComSobra: true }),
+      '00000000-0000-4000-8000-000000000099',
+    );
+    expect(insert.projeto_id).toBe('00000000-0000-4000-8000-000000000099');
     expect(insert.volume_m3).toBe(4.5);
     expect(insert.combinado_com_sobra).toBe(true);
     expect(insert.status).toBe('planejado');

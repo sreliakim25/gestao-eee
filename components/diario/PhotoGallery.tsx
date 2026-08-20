@@ -115,6 +115,7 @@ export function PhotoGallery({
         }
 
         const { error: erroBanco } = await supabase.from('fotos_evidencia').insert({
+          projeto_id: projetoId,
           diario_obra_id: diarioObraId,
           storage_path: caminho,
           legenda: legenda.trim() || null,

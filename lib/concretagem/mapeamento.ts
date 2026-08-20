@@ -32,10 +32,18 @@ export function paraPedidoDominio(linha: ConcretagemPedido): PedidoConcretagem {
   };
 }
 
-/** Tipo do domínio → payload de escrita em `concretagem_pedidos`. */
-export function paraPedidoInsert(pedido: PedidoConcretagem): ConcretagemPedidoInsert {
+/**
+ * Tipo do domínio → payload de escrita em `concretagem_pedidos`.
+ *
+ * `PedidoConcretagem` é um recorte das regras puras e não carrega o
+ * dispositivo (projeto) a que o pedido pertence — por isso `projetoId` entra
+ * como parâmetro explícito, vindo do contexto de quem chama (rota/página já
+ * sabe qual projeto está ativo).
+ */
+export function paraPedidoInsert(pedido: PedidoConcretagem, projetoId: string): ConcretagemPedidoInsert {
   return {
     id: pedido.id,
+    projeto_id: projetoId,
     etapa: pedido.etapa,
     elementos: [...pedido.elementos],
     volume_m3: pedido.volumeM3,
