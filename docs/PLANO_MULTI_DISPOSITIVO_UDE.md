@@ -40,13 +40,14 @@ dados para o modelo multi-dispositivo:
 | `20260813100300_fotos_evidencia_projeto.sql` | `fotos_evidencia.projeto_id` — vínculo direto com o dispositivo |
 | `20260813100400_concretagem_orcamento_projeto.sql` | `concretagem_pedidos.projeto_id` / `orcamento_itens.projeto_id` |
 | `20260813100500_projeto_planilhas_smartsheet.sql` | Tabela `projeto_planilhas_smartsheet` (N:N dispositivo↔planilha) |
+| `20260820100000_seed_ugbs_reais.sql` | Seed das 6 UGBs reais (Caruaru, Garanhuns, Igarassu, Santa Cruz, Jaboatão dos Guararapes, São Lourenço da Mata) e atribuição de `projetos.ugb_id` do dispositivo existente (EEE Novo Mundo → Caruaru) |
 
 Também já feito: `lib/smartsheet/config-dispositivos.ts` — registro explícito de configuração
 de import por dispositivo (poda de ramo + mapeamento de elemento visual), para o importador
 parar de assumir que só existe a EEE Novo Mundo.
 
-Essas migrations ainda **não foram aplicadas no Supabase** e as alterações relacionadas
-ainda **não foram commitadas** — ver seção 4, Fase 0.
+Todas as migrations acima já foram aplicadas no Supabase (via `npm run db:aplicar -- --apply`)
+e commitadas.
 
 ---
 
@@ -107,8 +108,14 @@ ou tipos compartilhados aciona `qa-regressao` obrigatoriamente, conforme a regra
 
 ## 6. Pontos em aberto para validar com o usuário
 
-- Nomes e siglas reais das UGBs e dos dispositivos além da EEE Novo Mundo (Caruaru,
-  Garanhuns, SC citados como exemplo — confirmar lista real e fonte de dados de cada um).
+- Lista de UGBs já confirmada e aplicada (migration `20260820100000_seed_ugbs_reais.sql`):
+  Caruaru, Garanhuns, Igarassu, Santa Cruz, Jaboatão dos Guararapes, São Lourenço da Mata —
+  fonte: `Macroplano UDE.xlsx`, aba "MACROPLANO UDE NOVA DIVISÂO". O único dispositivo
+  existente (EEE Novo Mundo) foi atribuído à UGB Caruaru. Ainda em aberto: os nomes das EEEs
+  específicas dentro das demais UGBs — a planilha lista loteamentos (ex.: Rec. Laranjeiras,
+  Jd. Hortências) dentro de cada UGB, mas eles não são as EEEs que este app modela; nenhum
+  dispositivo novo foi criado em `projetos` até o usuário confirmar quais EEEs reais existem
+  em cada UGB.
 - Cada novo dispositivo tem planilha própria no Smartsheet já exportável, ou ainda não
   existe cronograma para eles?
 - Enquanto um dispositivo não tem Gestão Visual/Concretagem/Orçamento próprios, a tela
