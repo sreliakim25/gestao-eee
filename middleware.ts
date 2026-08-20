@@ -6,7 +6,8 @@
  *    Server Components não conseguem escrever cookies.
  * 2) Porteiro: sem cookie de sessão, qualquer rota do app redireciona para
  *    /login (guardando o destino em `?proximo=`); com sessão, /login redireciona
- *    para o Painel.
+ *    para a escolha de UGB (`/ugbs`), início da navegação UGB → dispositivo →
+ *    módulos.
  *
  * IMPORTANTE: a checagem aqui é por presença de cookie — barata e suficiente
  * para o desvio de navegação. A verificação de verdade (token válido + perfil)
@@ -93,7 +94,7 @@ export async function middleware(request: NextRequest) {
 /** Usuário já autenticado não fica na tela de login. */
 function redirecionarParaPainel(request: NextRequest, resposta: NextResponse): NextResponse {
   const destino = request.nextUrl.clone();
-  destino.pathname = '/';
+  destino.pathname = '/ugbs';
   destino.search = '';
   return redirecionarPreservandoCookies(destino, resposta);
 }

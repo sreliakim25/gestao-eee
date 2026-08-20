@@ -27,10 +27,16 @@ function mensagemDeLogin(codigo: string | undefined): string {
   return 'Não foi possível entrar. Verifique os dados e tente novamente.';
 }
 
-/** Só aceita destino interno — bloqueia open redirect via `?proximo=`. */
+/**
+ * Só aceita destino interno — bloqueia open redirect via `?proximo=`.
+ *
+ * Sem `?proximo=` (login "solto", não vindo de um redirecionamento de rota
+ * protegida), o destino padrão é `/ugbs`: a navegação pós-login começa pela
+ * escolha de UGB, não direto no Painel de um dispositivo.
+ */
 export function destinoSeguro(proximo: string | undefined): string {
-  if (!proximo) return '/';
-  if (!proximo.startsWith('/') || proximo.startsWith('//')) return '/';
+  if (!proximo) return '/ugbs';
+  if (!proximo.startsWith('/') || proximo.startsWith('//')) return '/ugbs';
   return proximo;
 }
 

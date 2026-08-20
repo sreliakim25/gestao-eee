@@ -1,8 +1,9 @@
 /**
  * /login — entrada do app (Supabase Auth, e-mail + senha).
  *
- * Se já houver sessão válida, redireciona direto para o Painel: o middleware já
- * faz esse desvio pelo cookie, aqui é a confirmação com o token validado.
+ * Se já houver sessão válida, redireciona direto para a escolha de UGB
+ * (`/ugbs`): o middleware já faz esse desvio pelo cookie, aqui é a
+ * confirmação com o token validado.
  */
 
 import { redirect } from 'next/navigation';
@@ -28,7 +29,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     // Sem Supabase configurado a tela de login ainda precisa abrir.
     autenticado = false;
   }
-  if (autenticado) redirect('/');
+  if (autenticado) redirect('/ugbs');
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-creme px-4 py-10">

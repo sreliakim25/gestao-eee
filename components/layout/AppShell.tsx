@@ -9,6 +9,7 @@
  * detectado pelo pathname.
  */
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import type { PerfilUsuario } from '@/types/database';
@@ -68,6 +69,12 @@ export function AppShell({ perfil, emailUsuario, children }: AppShellProps) {
 
           {nomeExibido ? (
             <div className="flex items-center gap-3">
+              <Link
+                href="/ugbs"
+                className="text-sm text-creme/85 underline underline-offset-2 hover:text-ouro"
+              >
+                Trocar dispositivo
+              </Link>
               <span className="hidden text-right text-sm leading-tight sm:block">
                 <span className="block">{nomeExibido}</span>
                 {perfil ? (
